@@ -2,7 +2,6 @@
 .ipynb_checkpoints
 .vscode/
 **/.DS_store
-**/process_annotated_timeseries-Copy1.ipynb
 **/test
 *checkpoint*
 **/__pycache__/
