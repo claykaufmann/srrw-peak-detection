@@ -2,7 +2,6 @@
 This module contains the following functions: 
 
 - extract_runoff
-- get_stage_events 
 - detect_edges
 - get_candidates
 - detect_flat_plat
@@ -143,27 +142,7 @@ def extract_runoff(data_in : np.ndarray,
                     events.append(event_flow[:, 0:2])
     return events
 
-
-def get_stage_events(stage_data):
-    prominence_range = [.01,None]
-    width_range = [None,None]
-    wlen = 500
-    distance = 1
-    rel_height =1.0
-    stage_peaks, props = find_peaks(stage_data[:,1],
-                            height = (None, None),
-                            threshold = (None,None),
-                            distance = distance,
-                            prominence = prominence_range,
-                            width = width_range,
-                            wlen = wlen,
-                            rel_height = rel_height)
-    stage_events = []
-
-    for peak in stage_peaks:
-        stage_events.append(np.array((stage_data[peak-1], stage_data[peak], stage_data[peak+1])))
-    return stage_events
-
+# This function is outdated and not used
 def detect_edges(y : np.ndarray, lag : int, threshold : float, influence : float) -> dict:
     """
     Given a timeseries, detect all rising and falling edges using given hyperparameters 
@@ -203,6 +182,7 @@ def detect_edges(y : np.ndarray, lag : int, threshold : float, influence : float
                 avgFilter = np.asarray(avgFilter),
                 stdFilter = np.asarray(stdFilter))
 
+# This function just wraps scipy.find_peaks in a slightly more convenient way 
 def get_candidates(data: np.ndarray, params : dict):
     
     """
@@ -223,6 +203,7 @@ def get_candidates(data: np.ndarray, params : dict):
                               rel_height = params['rel_h'])
     return peaks, props
 
+# This is an over simplistic way to detect flat plateuas in Turbidity ... it works for our specific data ... but it overly arbitrary and should eventually be scrapped
 def detect_flat_plat(data: np.ndarray, window: int, threshold: int):
     """ 
     Detect "flat plateaus" in a timeseries: consecutive datapoints as extreme amplitude
@@ -247,10 +228,11 @@ def detect_flat_plat(data: np.ndarray, window: int, threshold: int):
     return signals
 
 
-
-def detect_stage_rises(data):
+# This is our current best method for detecting stage rises
+def detect_stage_rises(data: np.ndarray) -> np.ndarray:
     """
-    Updated algorithm to detect stage rises trained using 
+    Detect rises in stage data.
+    Hyperparameters were trained using
     Nested-K-Fold-Cross-Validation 
     """
     # Import params for detect_stage_rises() from file
@@ -302,8 +284,9 @@ def detect_stage_rises(data):
     
     return signals
 
-
-def outdated_detect_stage_rises(data : np.ndarray):
+# This function is no longer used
+# It relied on manually selected hyparameters and was thus lacking
+def outdated_detect_stage_rises(data : np.ndarray) -> np.ndarray:
     """
     Function detects rising edges in stage based on upon manually selected hyper parameters 
     

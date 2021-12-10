@@ -542,11 +542,11 @@ def merge_additional_data(data : list, add_data : list, add_flag : str) -> list:
             index+=1
     return data
 
-def delete_missing_data_peaks(data, peaks, props, missing_file_path):
+def delete_missing_data_peaks(data: np.ndarray, peaks: list, props: dict, missing_file_path: str) -> tuple:
     """ 
     Delete peaks that occur during time periods designated as "missing data"
     
-    data:              timeseries that peaks occured in
+    data:              timeseries that peaks occured in (timestamp and value)
     peaks:             indices of peaks detected
     props:             properties associated with each peak
     missing_file_path: file path of missing date ranges
