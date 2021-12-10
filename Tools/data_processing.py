@@ -348,6 +348,7 @@ def correct_one_second_error(data):
             row[0] = row[0] + time_delta
     return data
 
+# Only used by 'extract_runoff' ... so outdated by association
 def smooth_data(data, passes):
     """
     Function smooths data using a moving average filter window of size 3 
@@ -360,6 +361,7 @@ def smooth_data(data, passes):
             data[i] = (data[i - 1] + 2.0 * data[i] + data[i + 1]) / 4.0  # weight unsmoothed value 2x
     return data
 
+# Only used by 'extract_runoff' ... so outdated by association
 def find_turning_points(data):
     """
     Find 'turning points' in the data 
@@ -383,6 +385,7 @@ def find_turning_points(data):
             turning_points[i, 1] = 1
     return turning_points
 
+# Outdated, not used anymore
 def compute_event_info(event : np.ndarray) -> dict:
     """
     Return a structure with start,end,peak,centroid of an event
@@ -401,6 +404,7 @@ def compute_event_info(event : np.ndarray) -> dict:
         event[:1])
     return struct
 
+# Outdated, not used anymore
 def julian_slope_ratio(event : np.ndarray) -> float:
     """
     Compute return ratio of left side of event over right side of event
@@ -420,6 +424,7 @@ def julian_slope_ratio(event : np.ndarray) -> float:
 
     return rising_slope / falling_slope
 
+# Outdated, not used anymore
 def interpolate_flagged_events(events : np.ndarray, data : np.ndarray) -> np.ndarray:
     """
     Interpolate flagged events

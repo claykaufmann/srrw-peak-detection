@@ -1,3 +1,5 @@
+# Just some outdated functions
+
 def event_from_props_ips(peaks : np.ndarray, props : dict, data : np.ndarray) -> list[np.ndarray]:
     """
     Generate a multi-sample "event" given a peak and it's left/right interpolated positions

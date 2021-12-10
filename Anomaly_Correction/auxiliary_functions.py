@@ -16,6 +16,7 @@ sys.path.insert(1,'../')
 from Tools.data_processing import smooth_data, find_turning_points
 from scipy.signal import find_peaks
 
+# This function is not used anymore really
 def extract_runoff(data_in : np.ndarray,
                    min_diff : float,
                    return_ratio : float,

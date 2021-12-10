@@ -56,6 +56,7 @@ def read_in_preprocessed_timeseries(in_file : str) -> np.ndarray:
 
     return data
 
+# Specifically for plotting annotated data to the 'Trainset' website plotting software 
 def write_data_to_trainset(fDOM_data : np.ndarray, 
                            stage_data : np.ndarray,
                            turb_data : np.ndarray, 
@@ -135,8 +136,7 @@ def write_data_to_trainset(fDOM_data : np.ndarray,
                 writer.writerow(['Turbidity',turb_time, f'{turb_data[i][1]:.5f}', turb_data[i][2]])
     outfile.close()
 
-
-
+# Specifically for plotting annotated data to the 'Trainset' website plotting software 
 def write_detected_to_trainset(fDOM_events : list[np.ndarray], 
                                stage_events: list[np.ndarray],  
                                turb_events: list[np.ndarray],  
