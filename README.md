@@ -18,7 +18,7 @@ below are the current distinct anomaly types that we have identified in our data
    - `fDOM_SKP` (fDOM Skyrocketing Peak)- a sharp sudden spike in amplitude of the timeseries data, usually with a small basewidth. This excludes those cause by interference from another timeseries. 
    - `fDOM_local_fluctuation` - many small peaks in rapid succession. 
    - `fDOM_flat_plateau` - consecutive samples between a sudden rise and sudden drop during which the amplitude is “near constant"
-   - `fDOM_flat_sink` - consecutive samples between a sudden drop and a sudden during which the amplitude is “near constant”
+   - `fDOM_flat_sink` - consecutive samples between a sudden drop and a sudden rise during which the amplitude is “near constant”
    - `fDOM_sensor_drift` - not yet detected
    
 #### Current anomalies recognized in turbidity:
@@ -27,7 +27,7 @@ below are the current distinct anomaly types that we have identified in our data
    - `turb_sensor_drift` - not yet detected
    - `turb_SKP ` (turbidity Skyrocketing Peak) - a sharp sudden spike in amplitude of the timeseries data, usually with a small basewidth, with no corresponding fDOM peak. 
    - `turb_flat_plateau` - consecutive samples between a sudden rise and sudden drop during which the amplitude is “near constant"
-   - `turb_flat_sink` - consecutive samples between a sudden drop and a sudden during which the amplitude is “near constant”
+   - `turb_flat_sink` - consecutive samples between a sudden drop and a sudden rise during which the amplitude is “near constant”
 
 ## Explanation of Repository Contents: 
 
@@ -40,20 +40,20 @@ below are the current distinct anomaly types that we have identified in our data
 ## Data/
 - contains all data used and generated in this project: raw timeseries, manually annoated data, detected anomalies, ect...
 
-#### 1. **Data/anomaly_data/** 
-- contains **.csv** files representing current fDOM and turbidity anomalies detected in the data. Each **.csv** files is in the form `[start_time, end_time, peak_time, anomaly_type]` (unless otherwise specified) where the timestamps are in julian time, and the **anomaly_type** is a string representing one of our current defined anomaly types. 
+#### 1. **Data/temp_plotting/** 
+- contains **.csv** files representing data to be plotted to TrainSet, whether that be for labeling or demonstration purposes
 
 #### 2. **Data/converted_data/** 
 - contains processed **.csv** files with the two columns `[Julian_time, value]` or `[Datetime, value]` generated from the messy_data files and also two **.csv** files containing the time log `[date, time]` of sensor cleaning. It contains both raw and corrected data (raw meaning the values are untouched, corrected meaning that the values have been hand corrected by a domain scientist). 
 
-#### 3. **Data/data_parsing_scripts/**
+#### 3. **Data/data_processing_scripts/**
 - scripts to convert "messy data" (as recieved from domain scientists) to "converted" data that is in a usable format. 
 
 #### 4. **Data/imgs/**
 - images that were captured throughout the project that were deemed worth saving
 
 #### 5. **Data/manual_annotating_data/**
-- data involved in manual data annotation (creating of training and testing data): data to be labeled, annotated data, and annotated data that has been processed to extract relevant information
+- labeled data, formatted as: 1. as downloaded from TrainSet. 2. converted into "ground_truth" files that will be used in training
 
 #### 6. **Data/messy_data/** 
 - contains the time series data as recieved. It usually comes as a csv file with some extraneous columns, so it is pared down to just the value and time columns. The time column is then converted to julian time and datetime for ease of computation. In addition, there are field note files `[date, time, comment]`, containing the sensor cleaning logs.
