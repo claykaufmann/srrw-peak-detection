@@ -31,6 +31,9 @@ below are the current distinct anomaly types that we have identified in our data
 ## Anomaly_Detection/ 
 - contains **.py** and **.ipynb** files associated with detecting predefined anomaly types. The files within are continually updating and evolving so descriptions will be generated when they are in a more permenant state. 
 
+## Anomaly_Correction/
+- contains **.py** and **.ipynb** files associated with correcting predefined anomaly types. The files here are outdated
+
 ## Data/
 - contains all data used and generated in this project: raw timeseries, manually annoated data, detected anomalies, ect...
 
