@@ -2,29 +2,32 @@
 
 This repository contains the codebase for work surrounding the **"Automated Cleaning of Time Series Data from the Sleepers Research River Watershed (SRRW)"** project. This project aims to develop an automatic mechanism that detects and corrects anomalies in time series data for hydrological and biogeochemical study. The time series data from the Sleepers Research River Watershed (SRRW), representing the changes of water stage (ft) and the associated temperature, turbidity, and FDOM, are used as the case study datasets.
 
-As of this commit we are exploring rule based classifiers whose parameters are optimized through random search. However, we are soon going to explore deep learning methods: RNN, LSTM, GRU ...
+As of this commit we are exploring rule based classifiers whose parameters are optimized through random search and small Convolutional Neural Networks, for anomaly detection.
+
+### Current timeseries data that we consider in anomaly detection: 
+- fluorescent disolved organic matter (fDOM)
+- turbidity (turb)
+- stage
 
 ### Current defined anomaly types:
 below are the current distinct anomaly types that we have identified in our data:
 
-#### Current anomalies detected in fDOM: 
-   - `normal_peak_fDOM` - although not an anomaly, normal peaks must also be detected
-   - `plummeting_peak_fDOM` - a sharp sudden drop in an amplitude of the timeseries data, usually with a small basewidth
-   - `out_of_place_peak_fDOM` - an fDOM peak that does not follow the three peak ordering rule
-   - `skyrocketing_peak_fDOM` - a sharp sudden spike in amplitude of the timeseries data, usually with a small basewidth. This excludes those cause by interference from another timeseries. 
-   - `local_fluctuation_fDOM` - many small peaks in rapid succession. 
-   - `flat_plateau_fDOM` - consecutive samples between a sudden rise and sudden drop during which the amplitude is “near constant"
-   - `flat_sink_fDOM` - consecutive samples between a sudden drop and a sudden during which the amplitude is “near constant”
-   - `sensor_drift_fDOM` - not yet detected
+#### Current anomalies recognized in fDOM: 
+   - `fDOM_PLP` (fDOM Plummeting Peak) - a sharp sudden drop in an amplitude of the timeseries data, usually with a small basewidth
+   - `fDOM_PP` (fDOM Phantom Peak) - an fDOM peak that does not follow the three peak ordering rule
+   - `fDOM_SKP` (fDOM Skyrocketing Peak)- a sharp sudden spike in amplitude of the timeseries data, usually with a small basewidth. This excludes those cause by interference from another timeseries. 
+   - `fDOM_local_fluctuation` - many small peaks in rapid succession. 
+   - `fDOM_flat_plateau` - consecutive samples between a sudden rise and sudden drop during which the amplitude is “near constant"
+   - `fDOM_flat_sink` - consecutive samples between a sudden drop and a sudden during which the amplitude is “near constant”
+   - `fDOM_sensor_drift` - not yet detected
    
-#### Current anomalies detected in turbidity
-   - `local_fluctuation_turb` - many small peaks in rapid succession. 
-   - `out_of_place_peak_turb` - an turb peak that does not follow the three peak ordering rule
-   - `normal_peak_turb` - although not an anomaly, normal peaks must also be detected
-   - `sensor_drift_turb` - not yet detected
-   - `skyrocketing_peak_turb` - a sharp sudden spike in amplitude of the timeseries data, usually with a small basewidth, with no corresponding fDOM peak. 
-   - `flat_plateau_turb` - consecutive samples between a sudden rise and sudden drop during which the amplitude is “near constant"
-   - `flat_sink_turb` - consecutive samples between a sudden drop and a sudden during which the amplitude is “near constant”
+#### Current anomalies recognized in turbidity:
+   - `turb_local_fluctuation` - many small peaks in rapid succession. 
+   - `turb_PP` (turbidity Phantom Peak) - an turb peak that does not follow the three peak ordering rule
+   - `turb_sensor_drift` - not yet detected
+   - `turb_SKP ` (turbidity Skyrocketing Peak) - a sharp sudden spike in amplitude of the timeseries data, usually with a small basewidth, with no corresponding fDOM peak. 
+   - `turb_flat_plateau` - consecutive samples between a sudden rise and sudden drop during which the amplitude is “near constant"
+   - `turb_flat_sink` - consecutive samples between a sudden drop and a sudden during which the amplitude is “near constant”
 
 ## Explanation of Repository Contents: 
 
