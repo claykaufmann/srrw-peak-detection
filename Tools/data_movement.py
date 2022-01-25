@@ -12,8 +12,8 @@ import csv
 import datetime
 import sys
 import numpy as np
-sys.path.append('/Users/zachfogg/Desktop/DB-SRRW/Tools/') # Jupyter-lab has a bug that makes this required
-import data_processing as dp
+#sys.path.append('~/Projects/Hydrogeochemical_ADC/Tools/') # Jupyter-lab has a bug that makes this required
+import Tools.data_processing as dp
 import numpy as np
 
 def read_in_timeseries(in_file : str, is_julian : bool = True) -> list[list]:
@@ -50,7 +50,7 @@ def read_in_preprocessed_timeseries(in_file : str) -> np.ndarray:
 
     data = dp.trim_timeseries(data, start_time, end_time)
 
-    data = dp.delete_from_timeseries(data, '/Users/zachfogg/Desktop/DB-SRRW/Data/misc/delete_date_ranges.txt')
+    data = dp.delete_from_timeseries(data, '../Data/misc/delete_date_ranges.txt')
 
     data = dp.interpolate_missing_intervals(data)
 
