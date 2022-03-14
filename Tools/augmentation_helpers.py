@@ -435,3 +435,149 @@ def smooth_data(
     main_turb = pd.concat([main_turb, flat_turb_df], ignore_index=True)
 
     return main_fdom, main_stage, main_turb, new_time_entry
+
+
+def write_augmented_data_to_csv(
+    labeled_fdom_path,
+    unlabeled_fdom_path,
+    labeled_turb_path,
+    unlabeled_turb_path,
+    augmented_fDOM_labeled,
+    augmented_fDOM_raw,
+    augmented_turb_raw_fdom,
+    augmented_stage_raw_fdom,
+    augmented_turb_labeled,
+    augmented_turb_raw,
+    augmented_fDOM_raw_turb,
+    augmented_stage_raw_turb,
+):
+    # call to_csv for each dataframe
+    # for each dataframe, we also drop the index
+
+    # write fDOM augmented data
+    augmented_fDOM_labeled.to_csv(
+        labeled_fdom_path + "labeled_fdom_peaks.csv", index=False
+    )
+    augmented_fDOM_raw.to_csv(unlabeled_fdom_path + "unlabeled_fdom.csv", index=False)
+    augmented_turb_raw_fdom.to_csv(
+        unlabeled_fdom_path + "unlabeled_turb.csv", index=False
+    )
+    augmented_stage_raw_fdom.to_csv(
+        unlabeled_fdom_path + "unlabeled_stage.csv", index=False
+    )
+
+    # write turb augmented data
+    augmented_turb_labeled.to_csv(
+        labeled_turb_path + "labeled_turb_peaks.csv", index=False
+    )
+    augmented_turb_raw.to_csv(unlabeled_turb_path + "unlabeled_turb.csv", index=False)
+    augmented_fDOM_raw_turb.to_csv(
+        unlabeled_turb_path + "unlabeled_fdom.csv", index=False
+    )
+    augmented_stage_raw_turb.to_csv(
+        unlabeled_turb_path + "unlabeled_stage.csv", index=False
+    )
+
+
+def write_to_trainset_csv(
+    augmented_fDOM_raw,
+    augmented_turb_raw_fdom,
+    augmented_stage_raw_fdom,
+    trainset_fdom_path,
+    augmented_turb_raw,
+    augmented_fDOM_raw_turb,
+    augmented_stage_raw_turb,
+    trainset_turb_path,
+):
+    # TODO: add peak labels in
+
+    # start by creating a dataframe that has the correct columns
+    trainset_fdom_df = pd.DataFrame(columns=["series", "timestamp", "value", "label"])
+    trainset_turb_df = pd.DataFrame(columns=["series", "timestamp", "value", "label"])
+
+    # ~~~~~~~ fDOM section ~~~~~~~
+    # start by just adding the fDOM data into the series, need to replace all timestamps
+    fdom_trainset_raw = copy.deepcopy(augmented_fDOM_raw)
+    fdom_turb_trainset_raw = copy.deepcopy(augmented_turb_raw_fdom)
+    fdom_stage_trainset_raw = copy.deepcopy(augmented_stage_raw_fdom)
+
+    # convert timestamps to julian
+    fdom_trainset_raw = convert_df_julian_to_datetime(fdom_trainset_raw)
+    fdom_turb_trainset_raw = convert_df_julian_to_datetime(fdom_turb_trainset_raw)
+    fdom_stage_trainset_raw = convert_df_julian_to_datetime(fdom_stage_trainset_raw)
+
+    # add in new values
+    fdom_trainset_raw["series"] = "fDOM"
+    fdom_trainset_raw["label"] = ""
+
+    fdom_turb_trainset_raw["series"] = "turb"
+    fdom_turb_trainset_raw["label"] = ""
+
+    fdom_stage_trainset_raw["series"] = "stage"
+    fdom_stage_trainset_raw["label"] = ""
+
+    # reorder columns
+    fdom_trainset_raw = fdom_trainset_raw.reindex(
+        columns=["series", "timestamp", "value", "label"]
+    )
+    fdom_turb_trainset_raw = fdom_turb_trainset_raw.reindex(
+        columns=["series", "timestamp", "value", "label"]
+    )
+    fdom_stage_trainset_raw = fdom_stage_trainset_raw.reindex(
+        columns=["series", "timestamp", "value", "label"]
+    )
+
+    # concat into single dataframe
+    trainset_fdom_df = pd.concat(
+        [fdom_trainset_raw, fdom_turb_trainset_raw, fdom_stage_trainset_raw]
+    )
+
+    # sort together
+    trainset_fdom_df = trainset_fdom_df.sort_values(by=["timestamp"], kind="stable")
+
+    # export to csv
+    trainset_fdom_df.to_csv(trainset_fdom_path + "fdom_augmented.csv", index=False)
+
+    # ~~~~~~~ turbidity section ~~~~~~~
+
+    # create new dataframes
+    turb_trainset_raw = copy.deepcopy(augmented_turb_raw)
+    turb_fdom_trainset_raw = copy.deepcopy(augmented_fDOM_raw_turb)
+    turb_stage_trainset_raw = copy.deepcopy(augmented_stage_raw_turb)
+
+    # convert timestamps
+    turb_trainset_raw = convert_df_julian_to_datetime(turb_trainset_raw)
+    turb_fdom_trainset_raw = convert_df_julian_to_datetime(turb_fdom_trainset_raw)
+    turb_stage_trainset_raw = convert_df_julian_to_datetime(turb_stage_trainset_raw)
+
+    # add in new values
+    turb_fdom_trainset_raw["series"] = "fDOM"
+    turb_fdom_trainset_raw["label"] = ""
+
+    turb_trainset_raw["series"] = "turb"
+    turb_trainset_raw["label"] = ""
+
+    turb_stage_trainset_raw["series"] = "stage"
+    turb_stage_trainset_raw["label"] = ""
+
+    # reorder columns
+    turb_fdom_trainset_raw = turb_fdom_trainset_raw.reindex(
+        columns=["series", "timestamp", "value", "label"]
+    )
+    turb_trainset_raw = turb_trainset_raw.reindex(
+        columns=["series", "timestamp", "value", "label"]
+    )
+    turb_stage_trainset_raw = turb_stage_trainset_raw.reindex(
+        columns=["series", "timestamp", "value", "label"]
+    )
+
+    # concat into single dataframe
+    trainset_turb_df = pd.concat(
+        [turb_fdom_trainset_raw, turb_trainset_raw, turb_stage_trainset_raw]
+    )
+
+    # sort together
+    trainset_turb_df = trainset_turb_df.sort_values(by=["timestamp"], kind="stable")
+
+    # export to csv
+    trainset_turb_df.to_csv(trainset_turb_path + "turb_augmented.csv", index=False)
