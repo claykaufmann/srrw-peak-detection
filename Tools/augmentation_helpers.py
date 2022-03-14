@@ -36,6 +36,26 @@ def next_time_entry(current_entry: float) -> float:
     return final_julian_time
 
 
+def convert_df_julian_to_datetime(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Converts a dataframe julian timestamp to datetime ISO 8601 format
+
+    df: a dataframe
+
+    return: changed dataframe
+    """
+    # iterate over dataframe, replacing timestamp vals
+    for i, row in df.iterrows():
+        df.loc[i, "timestamp"] = dp.julian_to_datetime(
+            df.loc[i, "timestamp"]
+        ).isoformat()
+
+        # add stupid 0.00Z to fit trainset format
+        df.loc[i, "timestamp"] = df.loc[i, "timestamp"] + ".000Z"
+
+    return df
+
+
 def get_last_augment_index(dataframe) -> int:
     """
     Collects the last index of the augmented time series
@@ -292,12 +312,12 @@ def smooth_data(
     main_fdom,
     main_stage,
     main_turb,
-    new_fdom,
-    new_stage,
-    new_turb,
     prev_added_entry,
     smooth_lower_bound,
     smooth_upper_bound,
+    fdom_val,
+    turb_val,
+    stage_val,
 ):
     """
     create a dataframe of data smoothing to smooth data in between sections of anomaly data
@@ -320,11 +340,10 @@ def smooth_data(
     last_stage = main_stage.loc[main_stage.shape[0] - 1, "value"]
     last_turb = main_turb.loc[main_turb.shape[0] - 1, "value"]
 
-    # get the next values we need to step up to
-    # iloc must be used as the augmented data indices are wrong, they have not been reindexed
-    next_fdom = new_fdom.iloc[0, 1]
-    next_stage = new_stage.iloc[0, 1]
-    next_turb = new_turb.iloc[0, 1]
+    # get the flat value
+    next_fdom = fdom_val
+    next_stage = stage_val
+    next_turb = turb_val
 
     # create list of x points the data needs to pass through
     # these are timestamps
@@ -333,19 +352,24 @@ def smooth_data(
 
     number_of_points = random.randrange(smooth_lower_bound, smooth_upper_bound)
 
+    # decrease using a fifth of the number of points
+    slope_number = number_of_points // 5
+
+    # save leftover length
+    left_over_length = number_of_points - slope_number
+
     x_points = []
     new_time_entry = prev_added_entry
-    for x in range(number_of_points):
+    for x in range(slope_number):
         # create list of time points
         new_time_entry = next_time_entry(new_time_entry)
         x_points.append(new_time_entry)
 
     x = np.array(x_points)
 
-    # TODO: make this sort of quadratic, instead of a linear line (add some form of exponent to it maybe?)
-    fdom_points = np.linspace(last_fdom, next_fdom, number_of_points)
-    stage_points = np.linspace(last_stage, next_stage, number_of_points)
-    turb_points = np.linspace(last_turb, next_turb, number_of_points)
+    fdom_points = np.linspace(last_fdom, next_fdom, slope_number)
+    stage_points = np.linspace(last_stage, next_stage, slope_number)
+    turb_points = np.linspace(last_turb, next_turb, slope_number)
 
     # create interpolation vals
     fdom_interpolation = interpolate.interp1d(x, fdom_points)
@@ -372,6 +396,39 @@ def smooth_data(
     main_stage = pd.concat([main_stage, stage_df], ignore_index=True)
     main_turb = pd.concat([main_turb, turb_df], ignore_index=True)
 
-    # TODO: add some straightish lines here to spread peaks out
+    # add in noise vals around the flat val
+    mu, sigma = 0.00001, 0.0001
+    noise = np.random.normal(mu, sigma, left_over_length)
+    fdom_noise = noise + fdom_val
+
+    mu, sigma = 0.00001, 0.0001
+    noise = np.random.normal(mu, sigma, left_over_length)
+    stage_noise = noise + stage_val
+
+    mu, sigma = 0.00001, 0.0001
+    noise = np.random.normal(mu, sigma, left_over_length)
+    turb_noise = noise + turb_val
+
+    # create new set of timestamps
+    flat_x_points = []
+    for x in range(left_over_length):
+        new_time_entry = next_time_entry(new_time_entry)
+        flat_x_points.append(new_time_entry)
+    x = np.array(flat_x_points)
+
+    # gen temp dataframes
+    flat_fdom = {"timestamp": x, "value": fdom_noise}
+    flat_fdom_df = pd.DataFrame(data=flat_fdom)
+
+    flat_stage = {"timestamp": x, "value": stage_noise}
+    flat_stage_df = pd.DataFrame(data=flat_stage)
+
+    flat_turb = {"timestamp": x, "value": turb_noise}
+    flat_turb_df = pd.DataFrame(data=flat_turb)
+
+    # concat flat section
+    main_fdom = pd.concat([main_fdom, flat_fdom_df], ignore_index=True)
+    main_stage = pd.concat([main_stage, flat_stage_df], ignore_index=True)
+    main_turb = pd.concat([main_turb, flat_turb_df], ignore_index=True)
 
     return main_fdom, main_stage, main_turb, new_time_entry
