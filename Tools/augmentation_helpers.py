@@ -340,11 +340,6 @@ def smooth_data(
     last_stage = main_stage.loc[main_stage.shape[0] - 1, "value"]
     last_turb = main_turb.loc[main_turb.shape[0] - 1, "value"]
 
-    # get the flat value
-    next_fdom = fdom_val
-    next_stage = stage_val
-    next_turb = turb_val
-
     # create list of x points the data needs to pass through
     # these are timestamps
     # randomly generate the number we need, between 12-24 hours
@@ -353,7 +348,7 @@ def smooth_data(
     number_of_points = random.randrange(smooth_lower_bound, smooth_upper_bound)
 
     # decrease using a fifth of the number of points
-    slope_number = number_of_points // 5
+    slope_number = number_of_points // 7
 
     # save leftover length
     left_over_length = number_of_points - slope_number
@@ -367,9 +362,17 @@ def smooth_data(
 
     x = np.array(x_points)
 
-    fdom_points = np.linspace(last_fdom, next_fdom, slope_number)
-    stage_points = np.linspace(last_stage, next_stage, slope_number)
-    turb_points = np.linspace(last_turb, next_turb, slope_number)
+    # remove neg numbers, to stop log issues
+    if last_fdom < 0:
+        last_fdom = 0.000001
+    if last_stage < 0:
+        last_stage = 0.000001
+    if last_turb < 0:
+        last_turb = 0.000001
+
+    fdom_points = np.geomspace(last_fdom, fdom_val, slope_number)
+    stage_points = np.geomspace(last_stage, stage_val, slope_number)
+    turb_points = np.geomspace(last_turb, turb_val, slope_number)
 
     # create interpolation vals
     fdom_interpolation = interpolate.interp1d(x, fdom_points)
