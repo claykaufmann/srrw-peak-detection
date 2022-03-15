@@ -6,6 +6,7 @@ from scipy.signal import find_peaks
 import math
 import pandas as pd
 import copy
+from Tools import auxiliary_functions
 
 """
 This file provides a bunch of wrappers for scipy find_peaks for specific peak types
@@ -475,5 +476,129 @@ def get_cands_turb_PP():
     cands_df = cands_df.rename(
         columns={0: "idx_of_peak", 1: "left_base", 2: "right_base", 3: "amplitude"}
     )
+
+    return cands_df
+
+
+def get_cands_turb_SKP():
+    """
+    get cands from turbidity skyrocketing peaks
+    """
+    # load in data
+    turb_data = dm.read_in_preprocessed_timeseries(
+        "../Data/converted_data/julian_format/turbidity_raw_10.1.2011_9.4.2020.csv"
+    )
+
+    # collect candidate peaks
+    prominence_range = [20, None]  # higher than that of fDOM
+    width_range = [None, None]
+    wlen = 100
+    distance = 1
+    rel_height = 0.6
+
+    # Get list of all peaks that could possibly be plummeting peaks
+    peaks, props = find_peaks(
+        turb_data[:, 1],
+        height=(None, None),
+        threshold=(None, None),
+        distance=distance,
+        prominence=prominence_range,
+        width=width_range,
+        wlen=wlen,
+        rel_height=rel_height,
+    )
+
+    # Form candidate set from returned information
+    cands = [
+        [
+            peak,
+            math.floor(props["left_ips"][i]),
+            math.ceil(props["right_ips"][i]),
+            props["prominences"][i],
+        ]
+        for i, peak in enumerate(peaks)
+    ]
+
+    cands_df = pd.DataFrame(cands)
+
+    # load in ground truths
+    truths_fname = "../Data/labeled_data/ground_truths/turb/turb_skp/julian_time/turb_SKP_0k-300k_labeled.csv"
+    truths = pd.read_csv(truths_fname)
+
+    # drop all non skp
+    truths = truths[truths["label_of_peak"] != "NSKP"]
+
+    # drop all rows in cands that don't have a label
+    cands_df = cands_df[cands_df[0].isin(truths["idx_of_peak"])]
+
+    # rename cols
+    cands_df.columns = ["idx_of_peak", "left_ips", "right_ips", "prominence"]
+
+    return cands_df
+
+
+def get_cands_turb_FPT():
+    """
+    get cands from turbidity flat plateaus
+    """
+    # load data
+    turb_data = dm.read_in_preprocessed_timeseries(
+        "../Data/converted_data/julian_format/turbidity_raw_10.1.2011_9.4.2020.csv"
+    )
+
+    cands = auxiliary_functions.detect_flat_plat(turb_data, 100, 40)
+
+    turb_flat_plat_indxs = []
+    for i in range(cands.shape[0]):
+        if cands[i] == 1:
+            turb_flat_plat_indxs.append(i)
+
+    # create dataframe
+    last_val = -1
+    start_idx = -1
+    end_idx = -1
+
+    start_indices = []
+    end_indices = []
+
+    for idx, val in enumerate(turb_flat_plat_indxs):
+        if val != last_val + 1:
+            # we are now in a new peak, save stuff
+            start_idx = val
+            start_indices.append(start_idx)
+
+            end_idx = last_val
+            end_indices.append(end_idx)
+
+        elif idx + 1 == len(turb_flat_plat_indxs):
+            end_indices.append(val)
+
+        # set last val
+        last_val = val
+
+    # drop first index in end indices
+    del end_indices[0]
+
+    cands = [[]]
+    for i in range(len(start_indices)):
+        cands.append([start_indices[i], start_indices[i], end_indices[i]])
+
+    # create dataframe
+    cands_df = pd.DataFrame(cands)
+
+    # drop first row (incorrect val)
+    cands_df = cands_df.drop([0])
+
+    # load truths
+    truths_fname = "../Data/labeled_data/ground_truths/turb/turb_fpt/julian_time/turb_FPT_0k-300k_labeled.csv"
+    truths = pd.read_csv(truths_fname)
+
+    truths = truths[truths["label_of_peak"] != "NFPT"]
+
+    # drop all rows in cands not in truths
+    cands_df = cands_df[cands_df[0].isin(truths["idx_of_peak"])]
+
+    # rename cols
+    cands_df.columns = ["idx_of_peak", "left_base", "right_base"]
 
     return cands_df
