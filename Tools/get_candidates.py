@@ -393,6 +393,37 @@ def get_cands_fDOM_NAP():
     return cands_df
 
 
+def get_cands_fDOM_FPT():
+    """
+    get candidates for fDOM flat plateaus
+
+    NOTE: these values are HARD CODED CURRENTLY, as I do not have a good way to detect plateaus
+    NOTE: idx of peak is just the left base, as it is a flat plateau
+    """
+    # load data
+    cands_manual = [[219005, 219005, 219578], [212951, 212951, 213211]]
+
+    cands_manual_df = pd.DataFrame(cands_manual)
+    cands_manual_df.columns = ["idx_of_peak", "left_base", "right_base"]
+
+    return cands_manual_df
+
+
+def get_cands_fDOM_FSK():
+    """
+    get candidates for fDOM flat sinks
+
+    NOTE: these values are HARD CODED CURRENTLY, as I do not have a good way to detect plateaus
+    NOTE: idx of peak is just the left base, as it is a flat sink
+    """
+    cands_manual = [[85747, 85747, 86462]]
+
+    cands_manual_df = pd.DataFrame(cands_manual)
+    cands_manual_df.columns = ["idx_of_peak", "left_base", "right_base"]
+
+    return cands_manual_df
+
+
 ######## TURBIDITY #########
 def get_cands_turb_PP():
     """
