@@ -537,7 +537,7 @@ def get_cands_turb_SKP():
     cands_df = cands_df[cands_df[0].isin(truths["idx_of_peak"])]
 
     # rename cols
-    cands_df.columns = ["idx_of_peak", "left_ips", "right_ips", "prominence"]
+    cands_df.columns = ["idx_of_peak", "left_base", "right_base", "prominence"]
 
     return cands_df
 
