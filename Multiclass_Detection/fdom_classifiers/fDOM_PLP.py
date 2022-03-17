@@ -1,8 +1,7 @@
 import pandas as pd
-import copy
 import numpy as np
-from scipy.signal import find_peaks
 import sys
+from Multiclass_Detection.get_cands import get_all_cands_fDOM
 
 sys.path.insert(1, "../../")
 from Tools.get_candidates import get_candidates
@@ -80,27 +79,40 @@ class fDOM_PLP_Classifier:
 
         PARAMETERS:
         fdom: a dataframe containing the samples data for fdom
-        stage: a dataframe containing the samples data for stage
-        turb: a dataframe containing the samples data for turbidity
 
         RETURNS:
         result, 0 if not anomaly, 1 if plummeting peak
         """
         # use the current params
         prominence_cond = peak[3] >= self.params["min_prominence"]
-        basewdith_cond = abs(peak[1] - peak[2]) <= self.params["max_basewidth"]
+        basewidth_cond = abs(peak[1] - peak[2]) <= self.params["max_basewidth"]
 
-        # interference_cond =
+        interference_cond = (
+            self.proximity_to_interference[index, 0]
+            >= self.params["interference_x_proximity"]
+            and self.proximity_to_interference[index, 1]
+            >= self.params["interference_y_proximity"]
+        )
 
-        # make necessary preprocesses
-        self.preprocess_sample()
+        proximity_cond = (
+            self.proximity_to_adjacent[index] >= self.params["proximity_threshold"]
+        )
 
-        # make prediction
-        # TODO: implement this
-        pred = []
+        # if we meet all criteria, mark as anomaly peak
+        if prominence_cond and basewidth_cond and interference_cond and proximity_cond:
+            # save prediction
+            self.predictions.append([peak[0], "PLP"])
 
-        # append result to predictions
-        self.predictions.append(pred)
+            # return that this has been classified as a plp
+            return "PLP"
+
+        else:
+            # TODO: unsure whether to make this NAP or NPLP
+            # save prediction
+            self.predictions.append([peak[0], "NAP"])
+
+            # return that this has been labeled as not an anomaly peak
+            return "NAP"
 
     def preprocess_sample(self):
         """
@@ -168,27 +180,12 @@ class fDOM_PLP_Classifier:
         }
         turb_peaks, _ = get_candidates(turb, turb_peak_params)
 
-        # get fDOM peaks
-        flipped_fDOM = dp.flip_timeseries(copy.deepcopy(fDOM))
-
-        # Get fDOM plummeting peak candidate set using scipy find_peaks()
-        prominence_range = [3, None]  # peaks must have at least prominence 3
-        width_range = [None, 10]  # peaks cannot have a base width of more than 5
-        wlen = 100
-        distance = 1
-        rel_height = 0.6
-
-        # Get list of all peaks that could possibly be plummeting peaks
-        peaks, props = find_peaks(
-            flipped_fDOM[:, 1],
-            height=(None, None),
-            threshold=(None, None),
-            distance=distance,
-            prominence=prominence_range,
-            width=width_range,
-            wlen=wlen,
-            rel_height=rel_height,
-        )
+        # get all fdom candidates, and convert them to a single index list to help find turbidity adjacent peaks
+        fdom_cands = get_all_cands_fDOM()
+        del fdom_cands["left_base"]
+        del fdom_cands["right_base"]
+        del fdom_cands["amplitude"]
+        peaks = fdom_cands.squeeze().tolist()
 
         # find adjacent turbidity peaks
         proximity_to_adjacent = np.zeros((len(peaks)))
