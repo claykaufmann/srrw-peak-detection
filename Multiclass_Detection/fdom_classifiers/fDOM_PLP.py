@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import sys
+import copy
 from Multiclass_Detection.get_cands import get_all_cands_fDOM
 
 sys.path.insert(1, "../../")
@@ -28,8 +29,6 @@ class fDOM_PLP_Classifier:
         PARAMS:
         basewidth_range: the range of which the width needs to be for the peak
         prominence_range: the range of possible prominence values
-
-        TODO: make sure this is right
         peak_prox_bounds: how close another peak can be
 
         turb_interference_bounds: how close a turb peak can be to classify it is possible interference
@@ -43,6 +42,10 @@ class fDOM_PLP_Classifier:
         # save params dict
         self.params = {}
         self.best_params = {}
+
+        # stats to keep track of best acc and f1 score
+        self.best_acc = 0
+        self.best_f1_score = 0
 
         # save values for classifying peaks
         self.basewidth_range = basewidth_range
@@ -148,18 +151,64 @@ class fDOM_PLP_Classifier:
 
         self.params = params
 
-    def test_results(self, preds, truths):
+    def test_results(self, truths, iteration, iterations):
         """
         test the classifier (used at the end of an iteration)
         """
         # test classifier
+        TP, TN, FP, FN, results = self.check_predictions(truths)
 
-        # check if better than previous best
+        # calculate stats
+        TPR = 0 if TP == FN == 0 else TP / (TP + FN)
+        TNR = TN / (TN + FP)
+        bal_acc = (TPR + TNR) / 2
+        f1_score = 0 if TP == FP == FN == 0 else (2 * TP) / ((2 * TP) + FP + FN)
 
-        # if so, update best params and acc metrics
+        if f1_score > self.best_f1_score:
+            self.best_f1_score = f1_score
 
-        # append to the acculmated test metrics and params for information post testing
-        pass
+        acc = bal_acc
+        # see if this is the new best
+        if acc > self.best_acc:
+            # if so, append it
+            self.best_acc = acc
+            max_result = copy.deepcopy(results)
+            self.best_params = copy.deepcopy(self.params)
+
+        if iteration and iteration % int(iterations / 10) == 0:
+            print(" {}/{} ".format(iteration, iterations), end="")
+
+        # TODO append to the acculmated test metrics and params for information post testing
+
+    def check_predictions(self, truths):
+        """
+        check predictions with truths to get statistics
+        """
+        TP = TN = FP = FN = 0
+        results = []
+
+        # test classifier
+        for i in range(len(self.predictions)):
+            pred = self.predictions[i][1]
+
+            truth = truths[i][2]
+
+            if pred == "PLP":
+                if truth == "NAP":
+                    FP += 1
+                    results.append(self.predictions[i].append("FP"))
+                else:
+                    TP += 1
+                    results.append(self.predictions[i].append("TP"))
+            else:
+                if truth == "NAP":
+                    TN += 1
+                    results.append(self.predictions[i].append("TN"))
+                else:
+                    FN += 1
+                    results.append(self.predictions[i].append("FN"))
+
+        return (TP, TN, FP, FN, results)
 
     def preprocess_turb_interference(self, fDOM, turb):
         """
