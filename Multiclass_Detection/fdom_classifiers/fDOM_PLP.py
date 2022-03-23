@@ -20,8 +20,8 @@ class fDOM_PLP_Classifier:
         turb_data,
         fdom_filename,
         fdom_truths_filename,
-        fdom_augmented_filename,
-        fdom_augmented_truths_filename,
+        fdom_augmented_filename=None,
+        fdom_augmented_truths_filename=None,
         basewidth_range=(1, 10),
         prominence_range=(5, 20),
         peak_prox_bounds=(1, 20),
@@ -252,10 +252,13 @@ class fDOM_PLP_Classifier:
             fdom_filename,
             fdom_truths_filename,
         )
-        fdom_augmented_cands = get_all_cands_fDOM(
-            fdom_augmented_filename, fdom_truths_augmented_filename, True
-        )
-        fdom_cands = pd.concat([fdom_cands, fdom_augmented_cands])
+        if fdom_augmented_filename != None and fdom_truths_augmented_filename != None:
+            fdom_augmented_cands = get_all_cands_fDOM(
+                fdom_augmented_filename, fdom_truths_augmented_filename, True
+            )
+            fdom_cands = pd.concat([fdom_cands, fdom_augmented_cands])
+        else:
+            print("WARNING: NO AUGMENTED DATA PROVIDED TO PLP CLASSIFIER.")
 
         del fdom_cands["left_base"]
         del fdom_cands["right_base"]
