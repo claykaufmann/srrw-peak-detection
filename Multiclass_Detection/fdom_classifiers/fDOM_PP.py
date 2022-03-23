@@ -19,6 +19,7 @@ class fDOM_PP_Classifier:
         self,
         fdom_data,
         stage_data,
+        augment_data_starting_timestamp,
         x_bounds=(0, 100),
         y_bounds=(0, 100),
         ratio_threshold_range=(0, 20),
@@ -47,7 +48,11 @@ class fDOM_PP_Classifier:
         self.accumulated_test_results = {}
         self.accumulated_cfmxs = {}
 
-        # TODO: perform preprocessing
+        # save augment data beginnning timestamp
+        self.augment_begin = augment_data_starting_timestamp
+        self.fdom_data = fdom_data
+
+        self.preprocess_stage_rises(stage_data)
 
     def start_iteration(self):
         # empty preds list
@@ -58,7 +63,7 @@ class fDOM_PP_Classifier:
 
         return self.params
 
-    def classify_sample(self, index, peak, augment_timestamp_divide) -> str:
+    def classify_sample(self, index, peak) -> str:
         """
         classify the passed in sample
 
@@ -69,7 +74,7 @@ class fDOM_PP_Classifier:
         """
 
         # preprocess the sample
-        peak = self.preprocess_sample(peak, augment_timestamp_divide)
+        peak = self.preprocess_sample(peak)
 
         # stage rise cond
         stage_rise_cond = not (peak[4] != -1 and peak[4] <= self.params["x"]) or (
@@ -94,22 +99,23 @@ class fDOM_PP_Classifier:
 
             return "NAP"
 
-    def preprocess_sample(self, peak, augment_timestamp_divide):
+    def preprocess_sample(self, peak):
         """
         add close stage conds, and add the not fall, or fall information to this peak
         """
         # add close stage conds
-        peak.append(self.s_index[peak, 0])
-        peak.append(self.s_index[peak, 1])
+        peak.append(self.s_index[int(peak[0]), 0])
+        peak.append(self.s_index[int(peak[0]), 1])
 
         # check if sample is augmented (we can use the timestamp trick)
-        if peak[0] > augment_timestamp_divide:
+        cand_timestamp = self.fdom_data[int(peak[0]), 0]
+        if cand_timestamp > self.augment_begin:
             # the peak is augmented, append not fall, as we can't make month assumptions
             peak.append("NFL")
 
         else:
 
-            dt = dp.julian_to_datetime(peak[0])
+            dt = dp.julian_to_datetime(cand_timestamp)
 
             if (dt.month == 10) or (dt.month == 9 and dt.day >= 20):
                 peak.append("FL")
