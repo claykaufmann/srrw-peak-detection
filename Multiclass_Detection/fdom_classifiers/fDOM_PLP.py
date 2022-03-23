@@ -18,10 +18,15 @@ class fDOM_PLP_Classifier:
         self,
         fdom_data,
         turb_data,
+        fdom_filename,
+        fdom_truths_filename,
+        fdom_augmented_filename,
+        fdom_augmented_truths_filename,
         basewidth_range=(1, 10),
         prominence_range=(5, 20),
         peak_prox_bounds=(1, 20),
         turb_interference_bounds=(0, 10),
+        augmented_turb_data=None,
     ) -> None:
         """
         creates the fDOM PLP classifier
@@ -59,7 +64,15 @@ class fDOM_PLP_Classifier:
         self.accumulated_cfmxs = {}
 
         # generate all of the close turb peaks from passed in data
-        self.preprocess_turb_interference(fdom_data, turb_data)
+        self.preprocess_turb_interference(
+            fdom_data,
+            turb_data,
+            fdom_filename,
+            fdom_augmented_filename,
+            fdom_truths_filename,
+            fdom_augmented_truths_filename,
+            augmented_turb_data,
+        )
 
     def start_iteration(self):
         """
@@ -110,7 +123,6 @@ class fDOM_PLP_Classifier:
             return "PLP"
 
         else:
-            # TODO: unsure whether to make this NAP or NPLP
             # save prediction
             self.predictions.append([peak[0], "NAP"])
 
@@ -210,7 +222,16 @@ class fDOM_PLP_Classifier:
 
         return (TP, TN, FP, FN, results)
 
-    def preprocess_turb_interference(self, fDOM, turb):
+    def preprocess_turb_interference(
+        self,
+        fDOM,
+        turb,
+        fdom_filename,
+        fdom_augmented_filename,
+        fdom_truths_filename,
+        fdom_truths_augmented_filename,
+        augmented_turb_data,
+    ):
         """
         on init of the classifier, check all close turbidity peaks, to help distinguish between PLP and normal turb interference
 
@@ -229,8 +250,23 @@ class fDOM_PLP_Classifier:
         }
         turb_peaks, _ = get_candidates(turb, turb_peak_params)
 
+        if augmented_turb_data is not None:
+            # add in augmented turb data
+            turb_peaks_augmented, _ = get_candidates(
+                augmented_turb_data, turb_peak_params
+            )
+            turb_peaks = np.concatenate((turb_peaks, turb_peaks_augmented))
+
         # get all fdom candidates, and convert them to a single index list to help find turbidity adjacent peaks
-        fdom_cands = get_all_cands_fDOM()
+        fdom_cands = get_all_cands_fDOM(
+            fdom_filename,
+            fdom_truths_filename,
+        )
+        fdom_augmented_cands = get_all_cands_fDOM(
+            fdom_augmented_filename, fdom_truths_augmented_filename, True
+        )
+        fdom_cands = pd.concat([fdom_cands, fdom_augmented_cands])
+
         del fdom_cands["left_base"]
         del fdom_cands["right_base"]
         del fdom_cands["amplitude"]
