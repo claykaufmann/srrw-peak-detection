@@ -6,7 +6,6 @@ from Multiclass_Detection.get_cands import get_all_cands_fDOM
 
 sys.path.insert(1, "../../")
 from Tools.get_candidates import get_candidates
-import Tools.data_processing as dp
 
 
 class fDOM_PLP_Classifier:
@@ -126,13 +125,6 @@ class fDOM_PLP_Classifier:
 
             # return that this has been labeled as not an anomaly peak
             return "NAP"
-
-    def preprocess_sample(self):
-        """
-        preprocess the sample data to align with stage, check turbidity interference, etc.
-        """
-        # TODO: implement this function
-        pass
 
     def generate_params(self):
         """
