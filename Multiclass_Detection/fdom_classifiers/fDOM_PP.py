@@ -26,6 +26,14 @@ class fDOM_PP_Classifier:
     ) -> None:
         """
         creates the classifier
+
+        PARAMS:
+        fdom_data: a time-series of fdom data
+        stage_data: a time-series of stage data
+        augment_data_starting_timestamp: the timestamp where data goes from real to augmented data
+        x_bounds: x bounds for proximity stage rises
+        y_bounds: y bounds for proximity stage rises
+        ratio_threshold_range: the ratio of width to height for a peak
         """
 
         # init preds
@@ -50,11 +58,19 @@ class fDOM_PP_Classifier:
 
         # save augment data beginnning timestamp
         self.augment_begin = augment_data_starting_timestamp
+
+        # save fdom data
         self.fdom_data = fdom_data
 
+        # preprocess stage rises
         self.preprocess_stage_rises(stage_data)
 
     def start_iteration(self):
+        """
+        to be called at the start of a training iteration
+        clears preds from last iteration, and generates new params
+        """
+
         # empty preds list
         self.predictions = []
 
@@ -70,7 +86,6 @@ class fDOM_PP_Classifier:
         PARAMS:
         index: index of the peak in list of candidates
         peak: the peak itself
-        augment_timestamp_divide: the timestamp at which augmented data begins (needed for preprocessing)
         """
 
         # preprocess the sample
@@ -82,7 +97,6 @@ class fDOM_PP_Classifier:
         )
 
         # peak is not in fall (for non augmented data)
-        # TODO: WATCH INDEX, IT INCLUDES STAGE INFORMATION
         fall_range_cond = peak[6] == "NFL"
 
         # prom to basewidth ratio cond
@@ -102,19 +116,24 @@ class fDOM_PP_Classifier:
     def preprocess_sample(self, peak):
         """
         add close stage conds, and add the not fall, or fall information to this peak
+
+        PARAMS:
+        peak: the candidate peak
         """
+
         # add close stage conds
         peak.append(self.s_index[int(peak[0]), 0])
         peak.append(self.s_index[int(peak[0]), 1])
 
         # check if sample is augmented (we can use the timestamp trick)
+        # use fdom data to get the actual timestamp
         cand_timestamp = self.fdom_data[int(peak[0]), 0]
         if cand_timestamp > self.augment_begin:
             # the peak is augmented, append not fall, as we can't make month assumptions
             peak.append("NFL")
 
         else:
-
+            # else, this is from real data, check what month it is coming from
             dt = dp.julian_to_datetime(cand_timestamp)
 
             if (dt.month == 10) or (dt.month == 9 and dt.day >= 20):
@@ -125,16 +144,30 @@ class fDOM_PP_Classifier:
         return peak
 
     def generate_params(self):
+        """
+        generate new params for a new iteration
+        """
         params = {}
+
+        # randomly assign new params for random grid search
         params["x"] = np.random.randint(self.x_bounds[0], self.x_bounds[1] + 1)
         params["y"] = np.random.randint(self.y_bounds[0], self.y_bounds[1] + 1)
         params["ratio_threshold"] = np.random.uniform(
             self.ratio_threshold_range[0], self.ratio_threshold_range[1]
         )
 
+        # save these params
         self.params = params
 
     def test_results(self, truths):
+        """
+        test the results from past iteration of training (call at end of iteration)
+
+        PARAMS:
+        truths: a list of truths for all candidates
+        """
+
+        # check predictions
         TP, TN, FP, FN, results = self.check_predictions(truths)
 
         # calculate stats
@@ -155,6 +188,13 @@ class fDOM_PP_Classifier:
             self.best_params = copy.deepcopy(self.params)
 
     def check_predictions(self, truths):
+        """
+        check predictions for the past iteration
+
+        PARAMS:
+        truths: a list of truths for all candidates
+        """
+
         TP = TN = FP = FN = 0
         results = []
 
@@ -180,13 +220,18 @@ class fDOM_PP_Classifier:
                     FN += 1
                     results.append(self.predictions[i].append("FN"))
 
+        # return information
         return (TP, TN, FP, FN, results)
 
     def preprocess_stage_rises(self, stage_data):
         """
         get all stage rises, and add them to an array maintaining close prox to fDOM peaks
+
+        PARAMS:
+        stage_data: a time-series of stage data
         """
 
+        # call detect_stage_rises to get stage rises
         s_indices = detect_stage_rises(stage_data[:, 1])
 
         y = s_indices.shape[0] - 1
@@ -222,4 +267,5 @@ class fDOM_PP_Classifier:
 
             y -= 1
 
+        # save this information for use later
         self.s_index = s_indexed
