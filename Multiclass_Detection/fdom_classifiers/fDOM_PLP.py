@@ -185,9 +185,6 @@ class fDOM_PLP_Classifier:
             max_result = copy.deepcopy(results)
             self.best_params = copy.deepcopy(self.params)
 
-        if iteration and iteration % int(iterations / 10) == 0:
-            print(" {}/{} ".format(iteration, iterations), end="")
-
         # TODO append to the acculmated test metrics and params for information post testing
 
     def check_predictions(self, truths):

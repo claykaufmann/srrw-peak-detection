@@ -140,13 +140,52 @@ class fDOM_SKP_Classifier:
         """
         test the results of the past iteration
         """
-        pass
+        TP, TN, FP, FN, results = self.check_predictions(truths)
+
+        # calculate stats
+        TPR = 0 if TP == FN == 0 else TP / (TP + FN)
+        TNR = TN / (TN + FP)
+        bal_acc = (TPR + TNR) / 2
+        f1_score = 0 if TP == FP == FN == 0 else (2 * TP) / ((2 * TP) + FP + FN)
+
+        if f1_score > self.best_f1_score:
+            self.best_f1_score = f1_score
+
+        acc = bal_acc
+        # see if this is the new best
+        if acc > self.best_acc:
+            # if so, append it
+            self.best_acc = acc
+            max_result = copy.deepcopy(results)
+            self.best_params = copy.deepcopy(self.params)
 
     def check_predictions(self, truths):
         """
         check all predictions
         """
-        pass
+        TP = TN = FP = FN = 0
+        results = []
+
+        for i in range(len(self.predictions)):
+            prediction = self.predictions[i][1]
+            truth = truths[i][2]
+
+            if prediction == "SKP":
+                if truth == "NAP":
+                    FP += 1
+                    results.append(self.predictions[i].append("FP"))
+                else:
+                    TP += 1
+                    results.append(self.predictions[i].append("TP"))
+            else:
+                if truth == "NAP":
+                    TN += 1
+                    results.append(self.predictions[i].append("TN"))
+                else:
+                    FN += 1
+                    results.append(self.predictions[i].append("FN"))
+
+        return (TP, TN, FP, FN, results)
 
     def initialize_detection_mechanisms(
         self,
