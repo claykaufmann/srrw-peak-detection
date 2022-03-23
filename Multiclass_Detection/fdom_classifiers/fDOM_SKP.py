@@ -19,6 +19,10 @@ class fDOM_SKP_Classifier:
     def __init__(
         self,
         fDOM,
+        fdom_raw_filename,
+        fdom_truth_filename,
+        fdom_augmented_filename=None,
+        fdom_augmented_truth_filename=None,
         basewidth_range=(1, 10),
         prominence_range=(5, 20),
         peak_prox_bounds=(0, 20),
@@ -52,7 +56,13 @@ class fDOM_SKP_Classifier:
         self.accumulated_test_results = {}
         self.accumulated_cfmxs = {}
 
-        self.initialize_detection_mechanisms(fDOM)
+        self.initialize_detection_mechanisms(
+            fDOM,
+            fdom_raw_filename,
+            fdom_truth_filename,
+            fdom_augmented_filename,
+            fdom_augmented_truth_filename,
+        )
 
     def start_iteration(self):
         """
@@ -126,12 +136,41 @@ class fDOM_SKP_Classifier:
             return True
         return True
 
-    def initialize_detection_mechanisms(self, fDOM):
+    def test_results(self, truths, iteration, iterations):
+        """
+        test the results of the past iteration
+        """
+        pass
+
+    def check_predictions(self, truths):
+        """
+        check all predictions
+        """
+        pass
+
+    def initialize_detection_mechanisms(
+        self,
+        fDOM,
+        fdom_raw_filename,
+        fdom_truth_filename,
+        fdom_augmented_filename,
+        fdom_augmented_truth_filename,
+    ):
         """
         get downward peaks, and prox peaks
         """
         # get total list of candidates
-        fdom_cands = get_all_cands_fDOM()
+        fdom_cands = get_all_cands_fDOM(fdom_raw_filename, fdom_truth_filename)
+
+        # add augmented peaks
+        if fdom_augmented_filename and fdom_augmented_truth_filename != None:
+            fdom_aug_cands = get_all_cands_fDOM(
+                fdom_augmented_filename, fdom_augmented_truth_filename, True
+            )
+            fdom_cands = pd.concat([fdom_cands, fdom_aug_cands])
+
+        cands = fdom_cands.values.tolist()
+
         del fdom_cands["left_base"]
         del fdom_cands["right_base"]
         del fdom_cands["amplitude"]
@@ -174,7 +213,7 @@ class fDOM_SKP_Classifier:
 
         prox_to_downward = np.zeros((len(peaks), 2))
 
-        for i, cand in enumerate(peaks):
+        for i, cand in enumerate(cands):
             x = y = fDOM.shape[0] + 1
 
             for downward_peak in downward_peaks:
