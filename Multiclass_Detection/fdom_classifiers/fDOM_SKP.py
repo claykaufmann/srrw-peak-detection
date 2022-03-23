@@ -136,7 +136,7 @@ class fDOM_SKP_Classifier:
             return True
         return True
 
-    def test_results(self, truths, iteration, iterations):
+    def test_results(self, truths):
         """
         test the results of the past iteration
         """

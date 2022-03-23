@@ -87,7 +87,7 @@ class fDOM_PLP_Classifier:
         # return params for information (prob not needed)
         return self.params
 
-    def classify_sample(self, index, peak) -> int:
+    def classify_sample(self, index, peak) -> str:
         """
         classify the given sample as either not anomaly or anomaly
 
@@ -161,7 +161,7 @@ class fDOM_PLP_Classifier:
 
         self.params = params
 
-    def test_results(self, truths, iteration, iterations):
+    def test_results(self, truths):
         """
         test the classifier (used at the end of an iteration)
         """
