@@ -5,6 +5,9 @@ import sys
 import copy
 from Multiclass_Detection.get_cands import get_all_cands_fDOM
 from scipy.signal import find_peaks
+import matplotlib.pyplot as plt
+import seaborn as sn
+from sklearn.metrics import confusion_matrix
 
 sys.path.insert(1, "../../")
 from Tools.get_candidates import get_candidates
@@ -136,7 +139,7 @@ class fDOM_SKP_Classifier:
             return True
         return True
 
-    def test_results(self, truths):
+    def end_of_iteration(self, truths):
         """
         test the results of the past iteration
         """
@@ -265,3 +268,119 @@ class fDOM_SKP_Classifier:
             prox_to_downward[i, 1] = y
 
         self.prox_to_downward = prox_to_downward
+
+    def test_results(self, peaks):
+        """
+        used at end of split to test results
+        """
+        params = self.best_params
+
+        results = []
+        for i, peak in enumerate(peaks):
+
+            prominence_condition = peak[3] >= params["min_prominence"]
+            basewidth_condition = abs(peak[1] - peak[2]) <= params["max_basewidth"]
+            downward_bases_condition = self.check_downward_peak_condition(i)
+            peak_proximity_condition = (
+                self.prox_to_adjacent[i] >= params["proximity_threshold"]
+            )
+
+            if (
+                prominence_condition
+                and basewidth_condition
+                and downward_bases_condition
+                and peak_proximity_condition
+            ):
+                results.append([peak[0], "SKP"])
+            else:
+                results.append([peak[0], "NSKP"])
+        return results
+
+    def label_test_results(self, preds, truths):
+        """
+        check the results of test
+        """
+        TP = TN = FP = FN = 0
+        results = []
+
+        for i in range(len(preds)):
+            prediction = preds[i][1]
+            truth = truths[i][2]
+
+            if prediction == "SKP":
+                if truth == "NSKP":
+                    FP += 1
+                    results.append(preds[i].append("FP"))
+                else:
+                    TP += 1
+                    results.append(preds[i].append("TP"))
+            else:
+                if truth == "NSKP":
+                    TN += 1
+                    results.append(preds[i].append("TN"))
+                else:
+                    FN += 1
+                    results.append(preds[i].append("FN"))
+
+        return (TP, TN, FP, FN, results)
+
+    def display_results(self):
+        """
+        display results of classifier
+        """
+
+        # Create and display confusion matrices
+        mean_cfmx = np.zeros((2, 2))
+        for key in self.accumulated_cfmxs.keys():
+            mean_cfmx += self.accumulated_cfmxs[key]
+        mean_cfmx = mean_cfmx / len(self.accumulated_cfmxs)
+
+        plt.figure(figsize=(10, 7))
+        plt.title(label="fDOM Skyrocketing Peaks")
+        sn.set(font_scale=1.5)
+        sn.heatmap(
+            pd.DataFrame(
+                mean_cfmx,
+                index=["Negative", "Positive"],
+                columns=["Negative", "Positive"],
+            ),
+            annot=True,
+            annot_kws={"size": 16},
+        )
+
+        plt.show()
+
+        plt.figure(figsize=(10, 7))
+        plt.title(label="fDOM Skyrocketing Peaks")
+
+        sn.set(font_scale=1.5)
+        sn.heatmap(
+            pd.DataFrame(
+                mean_cfmx.astype("float") / mean_cfmx.sum(axis=1)[:, np.newaxis],
+                index=["Negative", "Positive"],
+                columns=["Negative", "Positive"],
+            ),
+            annot=True,
+            annot_kws={"size": 16},
+        )
+        plt.xlabel("Ground Truths")
+        plt.ylabel("Predictions")
+        plt.show()
+
+    def classifier_testing(self, split, cands, truths):
+        """
+        perform end of straining tests, display results
+        """
+        test_preds = self.test_results(cands)
+
+        TP, TN, FP, FN, results = self.label_test_results(test_preds, truths)
+
+        cfmx = confusion_matrix(
+            [row[2] for row in truths],
+            [row[1] for row in test_preds],
+            labels=["NSKP", "SKP"],
+        )
+
+        self.accumulated_cfmxs[split] = copy.deepcopy(cfmx)
+
+        return (TP, TN, FP, FN, results)
