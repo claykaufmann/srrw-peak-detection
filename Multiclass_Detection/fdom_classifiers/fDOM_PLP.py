@@ -2,6 +2,10 @@ import pandas as pd
 import numpy as np
 import sys
 import copy
+import matplotlib.pyplot as plt
+import seaborn as sn
+
+from sklearn.metrics import confusion_matrix
 from Multiclass_Detection.get_cands import get_all_cands_fDOM
 
 sys.path.insert(1, "../../")
@@ -111,7 +115,7 @@ class fDOM_PLP_Classifier:
             self.proximity_to_adjacent[index] >= self.params["proximity_threshold"]
         )
 
-        # if we meet all criteria, mark as anomaly peak
+        # if we meet all criteria, mark as anomaly peak3
         if prominence_cond and basewidth_cond and interference_cond and proximity_cond:
             # save prediction
             self.predictions.append([peak[0], "PLP"])
@@ -153,7 +157,7 @@ class fDOM_PLP_Classifier:
 
         self.params = params
 
-    def test_results(self, truths):
+    def end_of_iteration(self, truths):
         """
         test the classifier (used at the end of an iteration)
         """
@@ -280,3 +284,131 @@ class fDOM_PLP_Classifier:
 
         self.proximity_to_adjacent = proximity_to_adjacent
         self.proximity_to_interference = proximity_to_interference
+
+    def test_results(self, peaks):
+        """
+        used at the end of training, to test all results
+        PARAMS:
+        cands: the list of testing candidates
+        """
+        # take in all test cands
+        params = self.best_params
+        results = []
+        for i, peak in enumerate(peaks):
+            prominence_condition = peak[3] >= params["min_prominence"]
+
+            basewidth_condition = abs(peak[1] - peak[2]) <= params["max_basewidth"]
+
+            interference_condition = (
+                self.proximity_to_interference[i, 0]
+                >= params["interference_x_proximity"]
+                and self.proximity_to_interference[i, 1]
+                >= params["interference_y_proximity"]
+            )
+
+            proximity_condition = (
+                self.proximity_to_adjacent[i] >= params["proximity_threshold"]
+            )
+
+            if (
+                prominence_condition
+                and basewidth_condition
+                and interference_condition
+                and proximity_condition
+            ):
+                results.append([peak[0], "PLP"])
+            else:
+                results.append([peak[0], "NPLP"])
+
+        return results
+
+    def label_test_results(self, predictions, truths):
+        """
+        label test results
+        """
+        TP = TN = FP = FN = 0
+        results = []
+
+        for i in range(len(predictions)):
+            prediction = predictions[i][1]
+            truth = truths[i][2]
+            if prediction == "PLP":
+                if truth == "NPLP":
+                    FP += 1
+                    results.append(predictions[i].append("FP"))
+                else:
+                    TP += 1
+                    results.append(predictions[i].append("TP"))
+            else:
+                if truth == "NPLP":
+                    TN += 1
+                    results.append(predictions[i].append("TN"))
+                else:
+                    FN += 1
+                    results.append(predictions[i].append("FN"))
+
+        return (TP, TN, FP, FN, results)
+
+    def display_results(self):
+        """
+        display results
+        """
+        mean_cfmx = np.zeros((2, 2))
+
+        for key in self.accumulated_cfmxs.keys():
+            mean_cfmx += self.accumulated_cfmxs[key]
+
+        mean_cfmx = mean_cfmx / len(self.accumulated_cfmxs)
+        print(mean_cfmx)
+
+        plt.figure(figsize=(10, 7))
+        plt.title(label="fDOM Plummeting Peak")
+
+        sn.set(font_scale=1.5)
+        sn.heatmap(
+            pd.DataFrame(
+                mean_cfmx.astype("float") / mean_cfmx.sum(axis=1)[:, np.newaxis],
+                index=["Negative", "Positive"],
+                columns=["Negative", "Positive"],
+            ),
+            annot=True,
+            annot_kws={"size": 16},
+        )
+        plt.xlabel("Ground Truths")
+        plt.ylabel("Predictions")
+        plt.show()
+
+        plt.figure(figsize=(10, 7))
+        plt.title(label="fDOM Plummeting Peak")
+
+        sn.set(font_scale=1.5)
+        sn.heatmap(
+            pd.DataFrame(
+                mean_cfmx,
+                index=["Negative", "Positive"],
+                columns=["Negative", "Positive"],
+            ),
+            annot=True,
+            annot_kws={"size": 16},
+        )
+        plt.xlabel("Ground Truths")
+        plt.ylabel("Predictions")
+        plt.show()
+
+    def clasifier_testing(self, split, cands, truths):
+        """
+        perform end of training tests, and display results
+        """
+        test_preds = self.test_results(cands)
+
+        TP, TN, FP, FN, results = self.label_test_results(test_preds, truths)
+
+        cfmx = confusion_matrix(
+            [row[2] for row in truths],
+            [row[1] for row in test_preds],
+            labels=["NPLP", "PLP"],
+        )
+
+        self.accumulated_cfmxs[split] = copy.deepcopy(cfmx)
+
+        return (TP, TN, FP, FN, results)
