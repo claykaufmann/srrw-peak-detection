@@ -3,6 +3,9 @@ import numpy as np
 import sys
 import copy
 from Multiclass_Detection.get_cands import get_all_cands_fDOM
+import matplotlib.pyplot as plt
+import seaborn as sn
+from sklearn.metrics import confusion_matrix
 
 sys.path.insert(1, "../../")
 from Tools.get_candidates import get_candidates
@@ -121,9 +124,16 @@ class fDOM_PP_Classifier:
         peak: the candidate peak
         """
 
-        # add close stage conds
-        peak.append(self.s_index[int(peak[0]), 0])
-        peak.append(self.s_index[int(peak[0]), 1])
+        # stop out of bounds error
+        if peak[0] < len(self.s_index) - 1:
+            # add close stage conds
+            peak.append(self.s_index[int(peak[0]), 0])
+            peak.append(self.s_index[int(peak[0]), 1])
+
+        # if it is greater, just assume no stage
+        else:
+            peak.append(-1)
+            peak.append(-1)
 
         # check if sample is augmented (we can use the timestamp trick)
         # use fdom data to get the actual timestamp
@@ -159,7 +169,7 @@ class fDOM_PP_Classifier:
         # save these params
         self.params = params
 
-    def test_results(self, truths):
+    def end_of_iteration(self, truths):
         """
         test the results from past iteration of training (call at end of iteration)
 
@@ -269,3 +279,122 @@ class fDOM_PP_Classifier:
 
         # save this information for use later
         self.s_index = s_indexed
+
+    def test_results(self, peaks):
+        """
+        used to test the classifier on test data
+        """
+
+        params = self.best_params
+        results = []
+        for i, peak in enumerate(peaks):
+            peak = self.preprocess_sample(peak)
+
+            # Peak is not near stage rise
+            stage_rise_condition = not (peak[4] != -1 and peak[4] <= params["x"]) or (
+                peak[4] != -1 and peak[5] <= params["y"]
+            )
+            # Peak is not in fall
+            fall_range_condition = peak[6] == "NFL"
+            # Peak has a large enough prominence/basewidth ratio
+            pbwr = peak[5] / abs(peak[1] - peak[2])
+            pbwr_condition = pbwr > params["ratio_threshold"]
+
+            if stage_rise_condition and fall_range_condition and pbwr_condition:
+                results.append([peak[0], "PP"])
+            else:
+                results.append([peak[0], "NPP"])
+
+        return results
+
+    def label_test_results(self, preds, truths):
+        """
+        label test results
+        """
+        TP = TN = FP = FN = 0
+        results = []
+
+        for i in range(len(preds)):
+            prediction = preds[i][1]
+            truth = truths[i][2]
+
+            if prediction == "NPP":
+                if truth == "NPP":
+                    TN += 1
+                    results.append(preds[i].append("TN"))
+                else:
+                    FN += 1
+                    results.append(preds[i].append("FN"))
+            else:
+                if truth == "NPP":
+                    FP += 1
+                    results.append(preds[i].append("FP"))
+                else:
+                    TP += 1
+                    results.append(preds[i].append("TP"))
+
+        return (TP, TN, FP, FN, results)
+
+    def display_results(self):
+        """
+        display test results in a heatmap
+        """
+
+        mean_cfmx = np.zeros((2, 2))
+        for key in self.accumulated_cfmxs.keys():
+            mean_cfmx += self.accumulated_cfmxs[key]
+        mean_cfmx = mean_cfmx / len(self.accumulated_cfmxs)
+
+        print(mean_cfmx)
+
+        plt.figure(figsize=(10, 7))
+        plt.title(label="fDOM Phantom Peak")
+
+        sn.set(font_scale=1.5)
+        sn.heatmap(
+            pd.DataFrame(
+                mean_cfmx.astype("float") / mean_cfmx.sum(axis=1)[:, np.newaxis],
+                index=["Negative", "Positive"],
+                columns=["Negative", "Positive"],
+            ),
+            annot=True,
+            annot_kws={"size": 16},
+        )
+        plt.xlabel("Ground Truths")
+        plt.ylabel("Predictions")
+        plt.show()
+
+        plt.figure(figsize=(10, 7))
+        plt.title(label="fDOM Phantom Peak")
+
+        sn.set(font_scale=1.5)
+        sn.heatmap(
+            pd.DataFrame(
+                mean_cfmx,
+                index=["Negative", "Positive"],
+                columns=["Negative", "Positive"],
+            ),
+            annot=True,
+            annot_kws={"size": 16},
+        )
+        plt.xlabel("Ground Truths")
+        plt.ylabel("Predictions")
+        plt.show()
+
+    def classifier_testing(self, split, cands, truths):
+        """
+        perform end of split tests, display results
+        """
+        test_preds = self.test_results(cands)
+
+        TP, TN, FP, FN, results = self.label_test_results(test_preds, truths)
+
+        cfmx = confusion_matrix(
+            [row[2] for row in truths],
+            [row[1] for row in test_preds],
+            labels=["NPP", "PP"],
+        )
+
+        self.accumulated_cfmxs[split] = copy.deepcopy(cfmx)
+
+        return (TP, TN, FP, FN, results)
