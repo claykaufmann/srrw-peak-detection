@@ -103,16 +103,19 @@ class fDOM_SKP_Classifier:
 
         self.params = params
 
-    def classify_sample(self, index, peak):
+    def classify_sample(self, index, peak, use_best_params=False):
         """
         classify a peak
         """
-        prom_cond = peak[3] >= self.params["min_prominence"]
-        basewidth_cond = abs(peak[1] - peak[2]) <= self.params["max_basewidth"]
-        downward_bases_cond = self.check_downward_peak_condition(index)
-        peak_prox_cond = (
-            self.prox_to_adjacent[index] >= self.params["proximity_threshold"]
-        )
+        if use_best_params:
+            params = self.best_params
+        else:
+            params = self.params
+
+        prom_cond = peak[3] >= params["min_prominence"]
+        basewidth_cond = abs(peak[1] - peak[2]) <= params["max_basewidth"]
+        downward_bases_cond = self.check_downward_peak_condition(index, use_best_params)
+        peak_prox_cond = self.prox_to_adjacent[index] >= params["proximity_threshold"]
 
         if prom_cond and basewidth_cond and downward_bases_cond and peak_prox_cond:
             self.predictions.append([peak[0], "SKP"])
@@ -122,22 +125,29 @@ class fDOM_SKP_Classifier:
             self.predictions.append([peak[0], "NAP"])
             return "NAP"
 
-    def check_downward_peak_condition(self, index):
+    def check_downward_peak_condition(self, index, use_best_params=False):
         """
         check to see if downward peak is close by
         """
-        left = (
-            self.prox_to_downward[index, 0] <= self.params["downward_bases_threshold"]
-        )
-        right = (
-            self.prox_to_downward[index, 1] <= self.params["downward_bases_threshold"]
-        )
+        if use_best_params:
+            params = self.best_params
+        else:
+            params = self.params
+
+        left = self.prox_to_downward[index, 0] <= params["downward_bases_threshold"]
+        right = self.prox_to_downward[index, 1] <= params["downward_bases_threshold"]
 
         if left and right:
             return False
         if left and not right:
             return True
         return True
+
+    def got_best_result(self):
+        """
+        main classifier got the best result, we now save our best params
+        """
+        self.best_params = copy.deepcopy(self.params)
 
     def end_of_iteration(self, truths):
         """
@@ -159,8 +169,6 @@ class fDOM_SKP_Classifier:
         if acc > self.best_acc:
             # if so, append it
             self.best_acc = acc
-            max_result = copy.deepcopy(results)
-            self.best_params = copy.deepcopy(self.params)
 
     def check_predictions(self, truths):
         """

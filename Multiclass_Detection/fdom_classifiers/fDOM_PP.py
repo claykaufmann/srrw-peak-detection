@@ -82,7 +82,7 @@ class fDOM_PP_Classifier:
 
         return self.params
 
-    def classify_sample(self, index, peak) -> str:
+    def classify_sample(self, index, peak, use_best_params=False) -> str:
         """
         classify the passed in sample
 
@@ -90,13 +90,17 @@ class fDOM_PP_Classifier:
         index: index of the peak in list of candidates
         peak: the peak itself
         """
+        if use_best_params:
+            params = self.best_params
+        else:
+            params = self.params
 
         # preprocess the sample
         peak = self.preprocess_sample(peak)
 
         # stage rise cond
-        stage_rise_cond = not (peak[4] != -1 and peak[4] <= self.params["x"]) or (
-            peak[4] != -1 and peak[5] <= self.params["y"]
+        stage_rise_cond = not (peak[4] != -1 and peak[4] <= params["x"]) or (
+            peak[4] != -1 and peak[5] <= params["y"]
         )
 
         # peak is not in fall (for non augmented data)
@@ -104,7 +108,7 @@ class fDOM_PP_Classifier:
 
         # prom to basewidth ratio cond
         pbwr = peak[3] / abs(peak[1] - peak[2])
-        pbwr_condition = pbwr > self.params["ratio_threshold"]
+        pbwr_condition = pbwr > params["ratio_threshold"]
 
         if stage_rise_cond and fall_range_cond and pbwr_condition:
             self.predictions.append([peak[0], "PP"])
@@ -169,6 +173,12 @@ class fDOM_PP_Classifier:
         # save these params
         self.params = params
 
+    def got_best_results(self):
+        """
+        return curr best results
+        """
+        self.best_params = copy.deepcopy(self.params)
+
     def end_of_iteration(self, truths):
         """
         test the results from past iteration of training (call at end of iteration)
@@ -194,8 +204,6 @@ class fDOM_PP_Classifier:
         if acc > self.best_acc:
             # if so, append it
             self.best_acc = acc
-            max_result = copy.deepcopy(results)
-            self.best_params = copy.deepcopy(self.params)
 
     def check_predictions(self, truths):
         """
