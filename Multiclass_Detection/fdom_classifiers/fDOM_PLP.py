@@ -65,6 +65,9 @@ class fDOM_PLP_Classifier:
         self.accumulated_test_results = {}
         self.accumulated_cfmxs = {}
 
+        # save fDOM data if needed
+        self.fDOM_data = fdom_data
+
         # generate all of the close turb peaks from passed in data
         self.preprocess_turb_interference(
             fdom_data,
@@ -122,11 +125,15 @@ class fDOM_PLP_Classifier:
                 self.proximity_to_adjacent[i] >= params["proximity_threshold"]
             )
 
+            # ensure that the peak has a negative ampltiude, as all PLP peaks do
+            downward_cond = peak[3] < 0
+
             if (
                 prominence_condition
                 and basewidth_condition
                 and interference_condition
                 and proximity_condition
+                and downward_cond
             ):
                 results.append([peak[0], "PLP"])
             else:
