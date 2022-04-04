@@ -85,34 +85,39 @@ class fDOM_PLP_Classifier:
         # generate new params
         self.generate_params()
 
-        # for fDOM PLP, generate
-
         # return params for information (prob not needed)
         return self.params
 
-    def classify_sample(self, index, peak) -> str:
+    def classify_sample(self, index, peak, use_best_params=False) -> str:
         """
         classify the given sample as either not anomaly or anomaly
 
         PARAMETERS:
-        fdom: a dataframe containing the samples data for fdom
+        index: the index of a peak
+        peak: the peak itself
+        use_best_params: whether or not to use best params, used for testing at end of iteration
 
         RETURNS:
         result, 0 if not anomaly, 1 if plummeting peak
         """
+        if use_best_params:
+            params = self.best_params
+        else:
+            params = self.params
+
         # use the current params
-        prominence_cond = peak[3] >= self.params["min_prominence"]
-        basewidth_cond = abs(peak[1] - peak[2]) <= self.params["max_basewidth"]
+        prominence_cond = peak[3] >= params["min_prominence"]
+        basewidth_cond = abs(peak[1] - peak[2]) <= params["max_basewidth"]
 
         interference_cond = (
             self.proximity_to_interference[index, 0]
-            >= self.params["interference_x_proximity"]
+            >= params["interference_x_proximity"]
             and self.proximity_to_interference[index, 1]
-            >= self.params["interference_y_proximity"]
+            >= params["interference_y_proximity"]
         )
 
         proximity_cond = (
-            self.proximity_to_adjacent[index] >= self.params["proximity_threshold"]
+            self.proximity_to_adjacent[index] >= params["proximity_threshold"]
         )
 
         # if we meet all criteria, mark as anomaly peak3
@@ -157,6 +162,12 @@ class fDOM_PLP_Classifier:
 
         self.params = params
 
+    def got_best_result(self):
+        """
+        main classifier got the best result, we now save our best params
+        """
+        self.best_params = copy.deepcopy(self.params)
+
     def end_of_iteration(self, truths):
         """
         test the classifier (used at the end of an iteration)
@@ -178,14 +189,10 @@ class fDOM_PLP_Classifier:
         if acc > self.best_acc:
             # if so, append it
             self.best_acc = acc
-            max_result = copy.deepcopy(results)
-            self.best_params = copy.deepcopy(self.params)
-
-        # TODO append to the acculmated test metrics and params for information post testing
 
     def check_predictions(self, truths):
         """
-        check predictions with truths to get statistics
+        check predictions with truths to get statistics of specific classifier
         """
         TP = TN = FP = FN = 0
         results = []
@@ -284,70 +291,6 @@ class fDOM_PLP_Classifier:
 
         self.proximity_to_adjacent = proximity_to_adjacent
         self.proximity_to_interference = proximity_to_interference
-
-    def test_results(self, peaks):
-        """
-        used at the end of training, to test all results
-        PARAMS:
-        cands: the list of testing candidates
-        """
-        # take in all test cands
-        params = self.best_params
-        results = []
-        for i, peak in enumerate(peaks):
-            prominence_condition = peak[3] >= params["min_prominence"]
-
-            basewidth_condition = abs(peak[1] - peak[2]) <= params["max_basewidth"]
-
-            interference_condition = (
-                self.proximity_to_interference[i, 0]
-                >= params["interference_x_proximity"]
-                and self.proximity_to_interference[i, 1]
-                >= params["interference_y_proximity"]
-            )
-
-            proximity_condition = (
-                self.proximity_to_adjacent[i] >= params["proximity_threshold"]
-            )
-
-            if (
-                prominence_condition
-                and basewidth_condition
-                and interference_condition
-                and proximity_condition
-            ):
-                results.append([peak[0], "PLP"])
-            else:
-                results.append([peak[0], "NPLP"])
-
-        return results
-
-    def label_test_results(self, predictions, truths):
-        """
-        label test results
-        """
-        TP = TN = FP = FN = 0
-        results = []
-
-        for i in range(len(predictions)):
-            prediction = predictions[i][1]
-            truth = truths[i][2]
-            if prediction == "PLP":
-                if truth == "NPLP":
-                    FP += 1
-                    results.append(predictions[i].append("FP"))
-                else:
-                    TP += 1
-                    results.append(predictions[i].append("TP"))
-            else:
-                if truth == "NPLP":
-                    TN += 1
-                    results.append(predictions[i].append("TN"))
-                else:
-                    FN += 1
-                    results.append(predictions[i].append("FN"))
-
-        return (TP, TN, FP, FN, results)
 
     def display_results(self):
         """
