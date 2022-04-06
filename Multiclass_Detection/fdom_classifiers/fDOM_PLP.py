@@ -126,14 +126,15 @@ class fDOM_PLP_Classifier:
             )
 
             # ensure that the peak has a negative ampltiude, as all PLP peaks do
-            downward_cond = peak[3] < 0
+            # TODO: is this allowed?
+            # downward_cond = peak[3] < 0
 
             if (
                 prominence_condition
                 and basewidth_condition
                 and interference_condition
                 and proximity_condition
-                and downward_cond
+                # and downward_cond
             ):
                 results.append([peak[0], "PLP"])
             else:
