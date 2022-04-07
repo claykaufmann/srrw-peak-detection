@@ -1,6 +1,7 @@
 """
 This module contains helper functions for data augmentation
 """
+import math
 import sys
 
 # so we can import tools module
@@ -585,3 +586,27 @@ def write_to_trainset_csv(
 
     # export to csv
     trainset_turb_df.to_csv(trainset_turb_path + "turb_augmented.csv", index=False)
+
+
+def check_class_balance(current_balance: dict, class_labels: list) -> list:
+    """
+    check the current balance of classes
+    """
+    # check the current balances, and then return which peak needs to be augmented
+    lowest_balance = []
+
+    curr_min = math.inf
+    for key in current_balance.keys():
+        count = current_balance[key]
+        if count <= curr_min:
+            curr_min = count
+            lowest_balance.append((key, count))
+
+    # iterate over curr balance again to find
+    final_label_list = []
+    for i in range(len(lowest_balance)):
+        # find all keys with curr min
+        if lowest_balance[i][1] == curr_min:
+            final_label_list.append(lowest_balance[i][0])
+
+    return final_label_list
