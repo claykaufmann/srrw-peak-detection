@@ -28,6 +28,10 @@ def get_all_cands_fDOM(
         raw_fdom_data_filename, truths_filename, is_augmented
     )
 
+    # this makes all plp candidate amplitudes negative, as all of these are downward peaks
+    # used in PLP detection, where the multiclass classifier checks to make sure the amplitude is negative
+    # cands_plp["amplitude"] = cands_plp["amplitude"] * -1
+
     cands_pp = gc.get_cands_fDOM_PP(
         raw_fdom_data_filename, truths_filename, is_augmented
     )

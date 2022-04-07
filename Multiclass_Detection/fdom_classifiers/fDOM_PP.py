@@ -82,7 +82,7 @@ class fDOM_PP_Classifier:
 
         return self.params
 
-    def classify_sample(self, index, peak, use_best_params=False) -> str:
+    def classify_samples(self, peaks, use_best_params=False) -> str:
         """
         classify the passed in sample
 
@@ -96,31 +96,33 @@ class fDOM_PP_Classifier:
             params = self.params
 
         # preprocess the sample
-        peak = self.preprocess_sample(peak)
+        peak = self.preprocess_samples(peaks)
 
-        # stage rise cond
-        stage_rise_cond = not (peak[4] != -1 and peak[4] <= params["x"]) or (
-            peak[4] != -1 and peak[5] <= params["y"]
-        )
+        results = []
+        for i, peak in enumerate(peaks):
 
-        # peak is not in fall (for non augmented data)
-        fall_range_cond = peak[6] == "NFL"
+            # stage rise cond
+            stage_rise_cond = not (peak[4] != -1 and peak[4] <= params["x"]) or (
+                peak[5] != -1 and peak[5] <= params["y"]
+            )
 
-        # prom to basewidth ratio cond
-        pbwr = peak[3] / abs(peak[1] - peak[2])
-        pbwr_condition = pbwr > params["ratio_threshold"]
+            # peak is not in fall (for non augmented data)
+            fall_range_cond = peak[6] == "NFL"
 
-        if stage_rise_cond and fall_range_cond and pbwr_condition:
-            self.predictions.append([peak[0], "PP"])
+            # prom to basewidth ratio cond
+            pbwr = peak[3] / abs(peak[1] - peak[2])
+            pbwr_condition = pbwr > params["ratio_threshold"]
 
-            return "PP"
+            if stage_rise_cond and fall_range_cond and pbwr_condition:
+                results.append([peak[0], "PP"])
 
-        else:
-            self.predictions.append([peak[0], "NAP"])
+            else:
+                results.append([peak[0], "NAP"])
 
-            return "NAP"
+        self.predictions = results
+        return results
 
-    def preprocess_sample(self, peak):
+    def preprocess_samples(self, peaks):
         """
         add close stage conds, and add the not fall, or fall information to this peak
 
@@ -128,34 +130,29 @@ class fDOM_PP_Classifier:
         peak: the candidate peak
         """
 
-        # stop out of bounds error
-        if peak[0] < len(self.s_index) - 1:
-            # add close stage conds
+        for peak in peaks:
+            # don't add a bunch of extra information if peak previously processed
+            # if "NFL" not in peak or "FL" not in peak:
             peak.append(self.s_index[int(peak[0]), 0])
             peak.append(self.s_index[int(peak[0]), 1])
 
-        # if it is greater, just assume no stage
-        else:
-            peak.append(-1)
-            peak.append(-1)
-
-        # check if sample is augmented (we can use the timestamp trick)
-        # use fdom data to get the actual timestamp
-        cand_timestamp = self.fdom_data[int(peak[0]), 0]
-        if cand_timestamp > self.augment_begin:
-            # the peak is augmented, append not fall, as we can't make month assumptions
-            peak.append("NFL")
-
-        else:
-            # else, this is from real data, check what month it is coming from
-            dt = dp.julian_to_datetime(cand_timestamp)
-
-            if (dt.month == 10) or (dt.month == 9 and dt.day >= 20):
-                peak.append("FL")
-            else:
+            # check if sample is augmented (we can use the timestamp trick)
+            # use fdom data to get the actual timestamp
+            cand_timestamp = self.fdom_data[int(peak[0]), 0]
+            if cand_timestamp > self.augment_begin:
+                # the peak is augmented, append not fall, as we can't make month assumptions
                 peak.append("NFL")
 
-        return peak
+            else:
+                # else, this is from real data, check what month it is coming from
+                dt = dp.julian_to_datetime(cand_timestamp)
+
+                if (dt.month == 10) or (dt.month == 9 and dt.day >= 20):
+                    peak.append("FL")
+                else:
+                    peak.append("NFL")
+
+        return peaks
 
     def generate_params(self):
         """
@@ -313,6 +310,7 @@ class fDOM_PP_Classifier:
             else:
                 results.append([peak[0], "NPP"])
 
+        self.predictions = results
         return results
 
     def label_test_results(self, preds, truths):

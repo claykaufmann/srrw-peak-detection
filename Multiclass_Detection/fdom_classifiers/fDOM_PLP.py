@@ -65,6 +65,9 @@ class fDOM_PLP_Classifier:
         self.accumulated_test_results = {}
         self.accumulated_cfmxs = {}
 
+        # save fDOM data if needed
+        self.fDOM_data = fdom_data
+
         # generate all of the close turb peaks from passed in data
         self.preprocess_turb_interference(
             fdom_data,
@@ -88,7 +91,7 @@ class fDOM_PLP_Classifier:
         # return params for information (prob not needed)
         return self.params
 
-    def classify_sample(self, index, peak, use_best_params=False) -> str:
+    def classify_samples(self, peaks, use_best_params=False) -> str:
         """
         classify the given sample as either not anomaly or anomaly
 
@@ -105,35 +108,40 @@ class fDOM_PLP_Classifier:
         else:
             params = self.params
 
-        # use the current params
-        prominence_cond = peak[3] >= params["min_prominence"]
-        basewidth_cond = abs(peak[1] - peak[2]) <= params["max_basewidth"]
+        results = []
+        for i, peak in enumerate(peaks):
+            prominence_condition = peak[3] >= params["min_prominence"]
 
-        interference_cond = (
-            self.proximity_to_interference[index, 0]
-            >= params["interference_x_proximity"]
-            and self.proximity_to_interference[index, 1]
-            >= params["interference_y_proximity"]
-        )
+            basewidth_condition = abs(peak[1] - peak[2]) <= params["max_basewidth"]
 
-        proximity_cond = (
-            self.proximity_to_adjacent[index] >= params["proximity_threshold"]
-        )
+            interference_condition = (
+                self.proximity_to_interference[i, 0]
+                >= params["interference_x_proximity"]
+                and self.proximity_to_interference[i, 1]
+                >= params["interference_y_proximity"]
+            )
 
-        # if we meet all criteria, mark as anomaly peak3
-        if prominence_cond and basewidth_cond and interference_cond and proximity_cond:
-            # save prediction
-            self.predictions.append([peak[0], "PLP"])
+            proximity_condition = (
+                self.proximity_to_adjacent[i] >= params["proximity_threshold"]
+            )
 
-            # return that this has been classified as a plp
-            return "PLP"
+            # ensure that the peak has a negative ampltiude, as all PLP peaks do
+            # TODO: is this allowed?
+            # downward_cond = peak[3] < 0
 
-        else:
-            # save prediction
-            self.predictions.append([peak[0], "NAP"])
+            if (
+                prominence_condition
+                and basewidth_condition
+                and interference_condition
+                and proximity_condition
+                # and downward_cond
+            ):
+                results.append([peak[0], "PLP"])
+            else:
+                results.append([peak[0], "NAP"])
 
-            # return that this has been labeled as not an anomaly peak
-            return "NAP"
+        self.predictions = results
+        return results
 
     def generate_params(self):
         """

@@ -103,7 +103,7 @@ class fDOM_SKP_Classifier:
 
         self.params = params
 
-    def classify_sample(self, index, peak, use_best_params=False):
+    def classify_samples(self, peaks, use_best_params=False):
         """
         classify a peak
         """
@@ -112,18 +112,25 @@ class fDOM_SKP_Classifier:
         else:
             params = self.params
 
-        prom_cond = peak[3] >= params["min_prominence"]
-        basewidth_cond = abs(peak[1] - peak[2]) <= params["max_basewidth"]
-        downward_bases_cond = self.check_downward_peak_condition(index, use_best_params)
-        peak_prox_cond = self.prox_to_adjacent[index] >= params["proximity_threshold"]
+        results = []
+        for index, peak in enumerate(peaks):
+            prom_cond = peak[3] >= params["min_prominence"]
+            basewidth_cond = abs(peak[1] - peak[2]) <= params["max_basewidth"]
+            downward_bases_cond = self.check_downward_peak_condition(
+                index, use_best_params
+            )
+            peak_prox_cond = (
+                self.prox_to_adjacent[index] >= params["proximity_threshold"]
+            )
 
-        if prom_cond and basewidth_cond and downward_bases_cond and peak_prox_cond:
-            self.predictions.append([peak[0], "SKP"])
-            return "SKP"
+            if prom_cond and basewidth_cond and downward_bases_cond and peak_prox_cond:
+                results.append([peak[0], "SKP"])
 
-        else:
-            self.predictions.append([peak[0], "NAP"])
-            return "NAP"
+            else:
+                results.append([peak[0], "NAP"])
+
+        self.predictions = results
+        return results
 
     def check_downward_peak_condition(self, index, use_best_params=False):
         """
@@ -213,7 +220,7 @@ class fDOM_SKP_Classifier:
         fdom_cands = get_all_cands_fDOM(fdom_raw_filename, fdom_truth_filename)
 
         # add augmented peaks
-        if fdom_augmented_filename and fdom_augmented_truth_filename != None:
+        if fdom_augmented_filename != None and fdom_augmented_truth_filename != None:
             fdom_aug_cands = get_all_cands_fDOM(
                 fdom_augmented_filename, fdom_augmented_truth_filename, True
             )
