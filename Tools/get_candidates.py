@@ -678,7 +678,7 @@ def get_cands_turb_NAP(turb_filename, truths_filename, is_augmented=False):
     cands_npp = pd.DataFrame(turb_cand)
 
     # load in data
-    turb_data = dm.read_in_preprocessed_timeseries(truths_filename)
+    turb_data = dm.read_in_preprocessed_timeseries(turb_filename)
 
     # collect candidate peaks
     prominence_range = [20, None]  # higher than that of fDOM

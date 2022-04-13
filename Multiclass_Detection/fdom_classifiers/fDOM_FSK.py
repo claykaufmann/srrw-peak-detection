@@ -14,7 +14,7 @@ class fDOM_FSK_Classifier:
     class represents an fDOM flat sink classifier
     """
 
-    def __init__(self) -> None:
+    def __init__(self, fdom_data, height_range=(300)) -> None:
         """
         creates the flat plateau classifier
         """
