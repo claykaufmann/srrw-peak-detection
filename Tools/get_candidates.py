@@ -57,15 +57,21 @@ def get_candidates(data: np.ndarray, params: dict):
 
 
 ########### FDOM ##########
-def get_cands_fDOM_PP():
+def get_cands_fDOM_PP(fdom_filename, truths_filename, is_augmented=False):
     """
     Get candidates from fDOM phantom peaks
+
+    PARAMS:
+    fdom_filename: fdom file name
+    truths: truths fdom file name
+    is_augmented: if data is augmented
     """
 
     # pass fDOM data through low pass filter
-    fDOM_data = dm.read_in_preprocessed_timeseries(
-        "../Data/converted_data/julian_format/fDOM_raw_10.1.2011-9.4.2020.csv"
-    )
+    if not is_augmented:
+        fDOM_data = dm.read_in_preprocessed_timeseries(fdom_filename)
+    else:
+        fDOM_data = np.array(dm.read_in_timeseries(fdom_filename, True))
     smoothed_signal = low_pass_filter(fDOM_data[:, 1], 7)
     fDOM_data = np.column_stack((fDOM_data[:, 0], smoothed_signal))
 
@@ -77,7 +83,11 @@ def get_cands_fDOM_PP():
         "rel_h": 0.6,
     }
 
-    remove_ranges = [[17816, 17849], [108170, 108200], [111364, 111381]]
+    # if data is augmented, no remove ranges
+    if not is_augmented:
+        remove_ranges = [[17816, 17849], [108170, 108200], [111364, 111381]]
+    else:
+        remove_ranges = [[-1, -1]]
 
     peaks, props = get_candidates(fDOM_data, candidate_params)
 
@@ -101,15 +111,12 @@ def get_cands_fDOM_PP():
     cands_df = pd.DataFrame(cands)
 
     # now load in ground truths, and drop all things in cands that are not anomaly peaks
-    # Import ground truth values
-    truth_fname = "../Data/labeled_data/ground_truths/fDOM/fDOM_PP/julian_time/fDOM_PP_0k-300k.csv"
-
-    truths = pd.read_csv(truth_fname)
+    truths = pd.read_csv(truths_filename)
 
     # drop all NPP indices
-    truths = truths[truths["label_of_peak"] != "NPP"]
+    truths = truths[truths["label_of_peak"] == "PP"]
 
-    # drop all rows in cnads that are not in truths
+    # drop all rows in cands that are not in truths
     cands_df = cands_df[cands_df[0].isin(truths["idx_of_peak"])]
 
     # reindex frame
@@ -121,15 +128,20 @@ def get_cands_fDOM_PP():
     return cands_df
 
 
-def get_cands_fDOM_SKP():
+def get_cands_fDOM_SKP(fdom_filename, truths_filename, is_augmented=False):
     """
     Get candidates from fDOM Skyrocketing peaks
+
+    PARAMS:
+    fdom_filename: fdom file name
+    truths: truths fdom file name
     """
 
     # load in fdom data
-    fDOM_data = dm.read_in_preprocessed_timeseries(
-        "../Data/converted_data/julian_format/fDOM_raw_10.1.2011-9.4.2020.csv"
-    )
+    if not is_augmented:
+        fDOM_data = dm.read_in_preprocessed_timeseries(fdom_filename)
+    else:
+        fDOM_data = np.array(dm.read_in_timeseries(fdom_filename, True))
 
     # find peaks
     prominence_range = [5, None]
@@ -164,12 +176,10 @@ def get_cands_fDOM_SKP():
     cands_df = pd.DataFrame(cands)
 
     # import truths
-    truth_fname = "../Data/labeled_data/ground_truths/fDOM/fDOM_SKP/julian_time/fDOM_SKP_0k-300k.csv"
-
-    truths = pd.read_csv(truth_fname)
+    truths = pd.read_csv(truths_filename)
 
     # drop all NSKP indices
-    truths = truths[truths["label_of_peak"] != "NSKP"]
+    truths = truths[truths["label_of_peak"] == "SKP"]
 
     # drop all rows in cands that are not in truths
     cands_df = cands_df[cands_df[0].isin(truths["idx_of_peak"])]
@@ -182,15 +192,20 @@ def get_cands_fDOM_SKP():
     return cands_df
 
 
-def get_cands_fDOM_PLP():
+def get_cands_fDOM_PLP(fdom_filename, truths_filename, is_augmented=False):
     """
     Get candidates from fDOM plummeting peaks
+
+    PARAMS:
+    fdom_filename: fdom file name
+    truths: truths fdom file name
     """
 
     # load data
-    fDOM_data = dm.read_in_preprocessed_timeseries(
-        "../Data/converted_data/julian_format/fDOM_raw_10.1.2011-9.4.2020.csv"
-    )
+    if not is_augmented:
+        fDOM_data = dm.read_in_preprocessed_timeseries(fdom_filename)
+    else:
+        fDOM_data = np.array(dm.read_in_timeseries(fdom_filename, True))
 
     # flip fdom
     flipped_fDOM = dp.flip_timeseries(copy.deepcopy(fDOM_data))
@@ -228,11 +243,10 @@ def get_cands_fDOM_PLP():
     cands_df = pd.DataFrame(cands)
 
     # get truths
-    truth_fname = "../Data/labeled_data/ground_truths/fDOM/fDOM_PLP/julian_time/fDOM_PLP_0k-300k.csv"
-    truths = pd.read_csv(truth_fname)
+    truths = pd.read_csv(truths_filename)
 
-    # drop all NPLP indices
-    truths = truths[truths["label_of_peak"] != "NPLP"]
+    # drop all non PLP indices
+    truths = truths[truths["label_of_peak"] == "PLP"]
 
     # drop all rows in cands not in truths
     cands_df = cands_df[cands_df[0].isin(truths["idx_of_peak"])]
@@ -246,17 +260,24 @@ def get_cands_fDOM_PLP():
     return cands_df
 
 
-def get_cands_fDOM_NAP():
+def get_cands_fDOM_NAP(fdom_filename, truths_filename, augmented_data=False):
     """
     get candidates from non anomaly peak data in fdom
+
+    PARAMS:
+    fdom_filename: fdom file name
+    truths: truths fdom file name
+    augmented_data: whether the file passed in is augmented or not
     """
 
     # get all peaks from other data types, drop dupes, go from there
     # get peaks from NPP:
     # pass fDOM data through low pass filter
-    fDOM_data = dm.read_in_preprocessed_timeseries(
-        "../Data/converted_data/julian_format/fDOM_raw_10.1.2011-9.4.2020.csv"
-    )
+    if not augmented_data:
+        fDOM_data = dm.read_in_preprocessed_timeseries(fdom_filename)
+    else:
+        fDOM_data = np.array(dm.read_in_timeseries(fdom_filename, True))
+
     smoothed_signal = low_pass_filter(fDOM_data[:, 1], 7)
     fDOM_data = np.column_stack((fDOM_data[:, 0], smoothed_signal))
 
@@ -293,9 +314,10 @@ def get_cands_fDOM_NAP():
 
     # get peaks from NPLP:
     # load data
-    fDOM_data = dm.read_in_preprocessed_timeseries(
-        "../Data/converted_data/julian_format/fDOM_raw_10.1.2011-9.4.2020.csv"
-    )
+    if not augmented_data:
+        fDOM_data = dm.read_in_preprocessed_timeseries(fdom_filename)
+    else:
+        fDOM_data = np.array(dm.read_in_timeseries(fdom_filename, True))
 
     # flip fdom
     flipped_fDOM = dp.flip_timeseries(copy.deepcopy(fDOM_data))
@@ -336,9 +358,10 @@ def get_cands_fDOM_NAP():
 
     # get peaks from NSKP:
     # load in fdom data
-    fDOM_data = dm.read_in_preprocessed_timeseries(
-        "../Data/converted_data/julian_format/fDOM_raw_10.1.2011-9.4.2020.csv"
-    )
+    if not augmented_data:
+        fDOM_data = dm.read_in_preprocessed_timeseries(fdom_filename)
+    else:
+        fDOM_data = np.array(dm.read_in_timeseries(fdom_filename, True))
 
     # find peaks
     prominence_range = [5, None]
@@ -372,20 +395,24 @@ def get_cands_fDOM_NAP():
 
     cands_nskp = pd.DataFrame(cands)
 
-    # get cands from FPT
+    # get cands from NFPT
     # HACK: this is hardcoded
-    cands = [[219200, 219005, 219578, 38.57122]]
-    cands_nfpt = pd.DataFrame(cands)
+    # TODO: write function to get flat plateaus in fdom
+    if not augmented_data:
+        cands = [[219200, 219005, 219578, 38.57122]]
+        cands_nfpt = pd.DataFrame(cands)
 
-    # concat dataframes
-    cands_df = pd.concat([cands_nskp, cands_npp, cands_nplp, cands_nfpt])
+        # concat dataframes (with nfpt as we have it, this is not augmented)
+        cands_df = pd.concat([cands_nskp, cands_npp, cands_nplp, cands_nfpt])
+    else:
+        cands_df = pd.concat([cands_nskp, cands_npp, cands_nplp])
+
     cands_df = cands_df.sort_values(by=[0], kind="stable")
     # cands_df = cands_df[~cands_df.index.duplicated(keep='first')]
     cands_df = cands_df.reset_index(drop=True)
 
     # import ground truths
-    truth_fname = "../Data/labeled_data/ground_truths/fDOM/fDOM_all_julian_0k-300k.csv"
-    truths = pd.read_csv(truth_fname)
+    truths = pd.read_csv(truths_filename)
 
     truths = truths[truths["label_of_peak"] == "NAP"]
 
@@ -431,15 +458,16 @@ def get_cands_fDOM_FSK():
 
 
 ######## TURBIDITY #########
-def get_cands_turb_PP():
+def get_cands_turb_PP(turb_filename, truths_filename, is_augmented=False):
     """
     Get candidates from turbidity phantom peaks
     """
 
     # load data
-    turb_data = dm.read_in_preprocessed_timeseries(
-        "../Data/converted_data/julian_format/turbidity_raw_10.1.2011_9.4.2020.csv"
-    )
+    if not is_augmented:
+        turb_data = dm.read_in_preprocessed_timeseries(turb_filename)
+    else:
+        turb_data = np.array(dm.read_in_timeseries(turb_filename, True))
 
     turb_cand_params = {
         "prom": [6, None],
@@ -451,9 +479,11 @@ def get_cands_turb_PP():
 
     turb_peaks, turb_props = get_candidates(turb_data, turb_cand_params)
 
-    turb_peaks, turb_props = dp.delete_missing_data_peaks(
-        turb_data, turb_peaks, turb_props, "../Data/misc/flat_plat_ranges.txt"
-    )
+    # if not augmented data, we need to delete the missing range
+    if not is_augmented:
+        turb_peaks, turb_props = dp.delete_missing_data_peaks(
+            turb_data, turb_peaks, turb_props, "../Data/misc/flat_plat_ranges.txt"
+        )
 
     turb_cand = [
         [
@@ -469,10 +499,9 @@ def get_cands_turb_PP():
     cands_df = pd.DataFrame(turb_cand)
 
     # load ground truths
-    truth_fname = "../Data/labeled_data/ground_truths/turb/turb_pp/julian_time/turb_pp_0k-300k_labeled"
-    truths = pd.read_csv(truth_fname)
+    truths = pd.read_csv(truths_filename)
 
-    truths = truths[truths["label_of_peak"] != "NPP"]
+    truths = truths[truths["label_of_peak"] != "NAP"]
 
     # drop all rows in cands that are not in truths
     cands_df = cands_df[cands_df[0].isin(truths["idx_of_peak"])]
@@ -485,14 +514,15 @@ def get_cands_turb_PP():
     return cands_df
 
 
-def get_cands_turb_SKP():
+def get_cands_turb_SKP(turb_filename, truths_filename, is_augmented=False):
     """
     get cands from turbidity skyrocketing peaks
     """
     # load in data
-    turb_data = dm.read_in_preprocessed_timeseries(
-        "../Data/converted_data/julian_format/turbidity_raw_10.1.2011_9.4.2020.csv"
-    )
+    if not is_augmented:
+        turb_data = dm.read_in_preprocessed_timeseries(turb_filename)
+    else:
+        turb_data = np.array(dm.read_in_timeseries(turb_filename, True))
 
     # collect candidate peaks
     prominence_range = [20, None]  # higher than that of fDOM
@@ -527,11 +557,10 @@ def get_cands_turb_SKP():
     cands_df = pd.DataFrame(cands)
 
     # load in ground truths
-    truths_fname = "../Data/labeled_data/ground_truths/turb/turb_skp/julian_time/turb_SKP_0k-300k_labeled.csv"
-    truths = pd.read_csv(truths_fname)
+    truths = pd.read_csv(truths_filename)
 
     # drop all non skp
-    truths = truths[truths["label_of_peak"] != "NSKP"]
+    truths = truths[truths["label_of_peak"] != "NAP"]
 
     # drop all rows in cands that don't have a label
     cands_df = cands_df[cands_df[0].isin(truths["idx_of_peak"])]
@@ -542,14 +571,15 @@ def get_cands_turb_SKP():
     return cands_df
 
 
-def get_cands_turb_FPT():
+def get_cands_turb_FPT(turb_filename, truths_filename, is_augmented=False):
     """
     get cands from turbidity flat plateaus
     """
     # load data
-    turb_data = dm.read_in_preprocessed_timeseries(
-        "../Data/converted_data/julian_format/turbidity_raw_10.1.2011_9.4.2020.csv"
-    )
+    if not is_augmented:
+        turb_data = dm.read_in_preprocessed_timeseries(turb_filename)
+    else:
+        turb_data = np.array(dm.read_in_timeseries(turb_filename, True))
 
     cands = auxiliary_functions.detect_flat_plat(turb_data, 100, 40)
 
@@ -595,10 +625,9 @@ def get_cands_turb_FPT():
     cands_df = cands_df.drop([0])
 
     # load truths
-    truths_fname = "../Data/labeled_data/ground_truths/turb/turb_fpt/julian_time/turb_FPT_0k-300k_labeled.csv"
-    truths = pd.read_csv(truths_fname)
+    truths = pd.read_csv(truths_filename)
 
-    truths = truths[truths["label_of_peak"] != "NFPT"]
+    truths = truths[truths["label_of_peak"] != "NAP"]
 
     # drop all rows in cands not in truths
     cands_df = cands_df[cands_df[0].isin(truths["idx_of_peak"])]
@@ -609,16 +638,16 @@ def get_cands_turb_FPT():
     return cands_df
 
 
-def get_cands_turb_NAP():
+def get_cands_turb_NAP(turb_filename, truths_filename, is_augmented=False):
     """
     get all candidates from non anomaly peak data in turb
     """
 
-    # TODO: implement this, base it off of fdom relevant function
     # load data
-    turb_data = dm.read_in_preprocessed_timeseries(
-        "../Data/converted_data/julian_format/turbidity_raw_10.1.2011_9.4.2020.csv"
-    )
+    if not is_augmented:
+        turb_data = dm.read_in_preprocessed_timeseries(turb_filename)
+    else:
+        turb_data = np.array(dm.read_in_timeseries(turb_filename, True))
 
     turb_cand_params = {
         "prom": [6, None],
@@ -630,9 +659,10 @@ def get_cands_turb_NAP():
 
     turb_peaks, turb_props = get_candidates(turb_data, turb_cand_params)
 
-    turb_peaks, turb_props = dp.delete_missing_data_peaks(
-        turb_data, turb_peaks, turb_props, "../Data/misc/flat_plat_ranges.txt"
-    )
+    if not is_augmented:
+        turb_peaks, turb_props = dp.delete_missing_data_peaks(
+            turb_data, turb_peaks, turb_props, "../Data/misc/flat_plat_ranges.txt"
+        )
 
     turb_cand = [
         [
@@ -648,9 +678,7 @@ def get_cands_turb_NAP():
     cands_npp = pd.DataFrame(turb_cand)
 
     # load in data
-    turb_data = dm.read_in_preprocessed_timeseries(
-        "../Data/converted_data/julian_format/turbidity_raw_10.1.2011_9.4.2020.csv"
-    )
+    turb_data = dm.read_in_preprocessed_timeseries(turb_filename)
 
     # collect candidate peaks
     prominence_range = [20, None]  # higher than that of fDOM
@@ -685,9 +713,10 @@ def get_cands_turb_NAP():
     cands_nskp = pd.DataFrame(cands)
 
     # load data
-    turb_data = dm.read_in_preprocessed_timeseries(
-        "../Data/converted_data/julian_format/turbidity_raw_10.1.2011_9.4.2020.csv"
-    )
+    if not is_augmented:
+        turb_data = dm.read_in_preprocessed_timeseries(turb_filename)
+    else:
+        turb_data = np.array(dm.read_in_timeseries(turb_filename, True))
 
     cands = auxiliary_functions.detect_flat_plat(turb_data, 100, 40)
 
@@ -740,8 +769,7 @@ def get_cands_turb_NAP():
     cands_df = cands_df.reset_index(drop=True)
 
     # import truths
-    truth_fname = "../Data/labeled_data/ground_truths/turb/turb_all_julian_0k-300k.csv"
-    truths = pd.read_csv(truth_fname)
+    truths = pd.read_csv(truths_filename)
 
     truths = truths[truths["label_of_peak"] == "NAP"]
 

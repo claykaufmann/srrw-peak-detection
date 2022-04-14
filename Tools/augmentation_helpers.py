@@ -458,24 +458,28 @@ def write_augmented_data_to_csv(
     augmented_fDOM_labeled.to_csv(
         labeled_fdom_path + "labeled_fdom_peaks.csv", index=False
     )
-    augmented_fDOM_raw.to_csv(unlabeled_fdom_path + "unlabeled_fdom.csv", index=False)
+    augmented_fDOM_raw.to_csv(
+        unlabeled_fdom_path + "unlabeled_fdom.csv", index=False, header=False
+    )
     augmented_turb_raw_fdom.to_csv(
-        unlabeled_fdom_path + "unlabeled_turb.csv", index=False
+        unlabeled_fdom_path + "unlabeled_turb.csv", index=False, header=False
     )
     augmented_stage_raw_fdom.to_csv(
-        unlabeled_fdom_path + "unlabeled_stage.csv", index=False
+        unlabeled_fdom_path + "unlabeled_stage.csv", index=False, header=False
     )
 
     # write turb augmented data
     augmented_turb_labeled.to_csv(
         labeled_turb_path + "labeled_turb_peaks.csv", index=False
     )
-    augmented_turb_raw.to_csv(unlabeled_turb_path + "unlabeled_turb.csv", index=False)
+    augmented_turb_raw.to_csv(
+        unlabeled_turb_path + "unlabeled_turb.csv", index=False, header=False
+    )
     augmented_fDOM_raw_turb.to_csv(
-        unlabeled_turb_path + "unlabeled_fdom.csv", index=False
+        unlabeled_turb_path + "unlabeled_fdom.csv", index=False, header=False
     )
     augmented_stage_raw_turb.to_csv(
-        unlabeled_turb_path + "unlabeled_stage.csv", index=False
+        unlabeled_turb_path + "unlabeled_stage.csv", index=False, header=False
     )
 
 
