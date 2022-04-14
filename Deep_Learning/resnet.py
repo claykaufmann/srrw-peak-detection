@@ -11,7 +11,7 @@ import torch.nn.functional as F
 
 class Conv1dSame(nn.Module):
     """
-    extension of conv1d
+    extension of conv1d, adds padding='same' functionality
     """
 
     def __init__(
@@ -49,7 +49,7 @@ class Conv1dSame(nn.Module):
 
 class MaxPoolSame(nn.Module):
     """
-    like above class, extends max pooling to be same padding
+    extension of maxpool1d, adds padding='same' functionality
     """
 
     def __init__(self, kernel_size) -> None:
@@ -75,7 +75,7 @@ class MaxPoolSame(nn.Module):
 
 class ResnetBlock(nn.Module):
     """
-    A block for resnet
+    Core resnet block
     """
 
     def __init__(
@@ -132,7 +132,6 @@ class ResnetBlock(nn.Module):
         self.max_pool = MaxPoolSame(kernel_size=self.stride)
 
     def forward(self, x):
-
         identity = x
 
         # the first conv
@@ -173,7 +172,7 @@ class ResnetBlock(nn.Module):
 
 class ResNet1D(nn.Module):
     """
-    resnet class
+    represents resnet as a whole
     """
 
     def __init__(
