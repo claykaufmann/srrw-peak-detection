@@ -1,13 +1,13 @@
 """
-this file contains the dataset for pytorch learning
+this file contains the datasets for the deep learning section of the project
 """
 
 import torch
 import torch.utils.data as data
 import numpy as np
-import sys
 import pandas as pd
 
+from . import augmentation_helpers as augment
 from . import data_movement as dm
 from . import data_processing as dp
 from .get_all_cands import get_all_cands_fDOM, get_all_truths_fDOM
@@ -28,6 +28,7 @@ class fdomDataset(data.Dataset):
         stage_augmented_dir=None,
         turb_augmented_dir=None,
         fdom_labeled_aug_dir=None,
+        window_size=15,
     ) -> None:
         """
         constructor
@@ -39,6 +40,7 @@ class fdomDataset(data.Dataset):
         fdom_augmented_dir: path to augmented fdom data
         stage_augmented_dir: path to augmented stage data (from fdom)
         turb_augmented_dir: path to augmented turb data (from fdom)
+        window_size: the width of data to use for each sample, note this is the distance before and after the main peak index
         """
 
         super(fdomDataset, self).__init__()
@@ -58,9 +60,10 @@ class fdomDataset(data.Dataset):
         # labeled data
         self.fdom_aug_labeled_path = fdom_labeled_aug_dir
 
-        self.get_data()
+        # generate the dataset
+        self.get_data(window_size)
 
-    def get_data(self):
+    def get_data(self, window_size):
         """
         saves the actual data into the classifier
         """
@@ -76,7 +79,7 @@ class fdomDataset(data.Dataset):
         turb_raw = dm.read_in_preprocessed_timeseries(self.turb_raw_path)
 
         # get cands from non augmented data
-        cands = get_all_cands_fDOM(self.fdom_raw_path, self.fdom_raw_labeled_path)
+        peaks = get_all_cands_fDOM(self.fdom_raw_path, self.fdom_raw_labeled_path)
 
         # get all respective truths
         truths = get_all_truths_fDOM(self.fdom_raw_labeled_path)
@@ -88,25 +91,61 @@ class fdomDataset(data.Dataset):
             stage_aug = np.array(dm.read_in_timeseries(self.stage_aug_path, True))
             turb_aug = np.array(dm.read_in_timeseries(self.turb_aug_path, True))
 
-            # labeled aug data
-            fdom_aug_labeled = get_all_truths_fDOM(self.fdom_aug_labeled_path, True)
+            # concatenate arrays of raw data
+            fdom_raw = np.concatenate([fdom_raw, fdom_aug])
+            stage_raw = np.concatenate([stage_raw, stage_aug])
+            turb_raw = np.concatenate([turb_raw, turb_aug])
 
             # get all cands from augmented data, augment cands
-            aug_cands = get_all_cands_fDOM(
+            aug_peaks = get_all_cands_fDOM(
                 self.fdom_raw_path, self.fdom_aug_labeled_path, True
             )
 
+            # get all truths
             aug_truths = get_all_truths_fDOM(self.fdom_aug_labeled_path, True)
 
             # concat these two frames
-            cands = pd.concat([cands, aug_cands])
+            peaks = pd.concat([peaks, aug_peaks])
             truths = pd.concat([truths, aug_truths])
 
-        # now, we need to modify these cands so they are saved in the following format:
-        # (sample, label), where sample is a 3 x m array, representing a segment of data for each fdom, stage, turb,
-        #   and label is the truth label
+        # initiate arrays for samples and labels that we will read data into
+        X = []
+        y = []
 
-        # get the starting and ending points for each candidate...
+        for i, peak in peaks.iterrows():
+            # get start and end indices
+            peak_idx = peaks.loc[i, "idx_of_peak"]
+            start_idx = peaks.loc[i, "left_base"]
+            end_idx = peaks.loc[i, "right_base"]
+
+            # these indices in the raw fdom timestamp is all we need
+            start_timestamp = fdom_raw[start_idx][0]
+            end_timestamp = fdom_raw[end_idx][0]
+
+            # use these indices to collect the data for stage and turb
+            # TODO: instead of using window size, use the actual timestamps if variable length data is allowed
+            # each sample follows this order: 0 = fdom, 1 = stage, 2 = turb
+            sample = np.hstack(
+                (
+                    fdom_raw[peak_idx - window_size : peak_idx + window_size + 1],
+                    stage_raw[peak_idx - window_size : peak_idx + window_size + 1],
+                    turb_raw[peak_idx - window_size : peak_idx + window_size + 1],
+                )
+            ).T
+            X.append(sample.T)
+
+            # get label
+            label = truths.loc[truths["idx_of_peak"] == peak_idx, "label_of_peak"].iloc[
+                0
+            ]
+            y.append(label)
+
+        # assert that X and y are the same length, so we have a label for each data point
+        assert len(X) == len(y)
+
+        # save data and truths
+        self.data = X
+        self.truths = y
 
     def __len__(self):
         """
@@ -118,14 +157,24 @@ class fdomDataset(data.Dataset):
     def __getitem__(self, idx):
         """
         returns the sample and label at index
-        """
 
+        SAMPLE FORMAT:
+        index 0: fdom data for peak range within the given window size on dataset initialization
+
+        RETURNS A SAMPLE WHERE:
+        sample[0] = raw data
+            sample[0][0] = fdom raw data
+            sample[0][1] = stage raw data
+            sample[0][2] = turb raw data
+        sample[1] = string, the label for the data
+        """
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
         # collect the sample, its a vector of fdom, stage, and turb
         sample = (self.data[idx], self.truths[idx])
 
+        # return the sample
         return sample
 
 
