@@ -21,6 +21,7 @@ class fdomDataset(data.Dataset):
 
     def __init__(
         self,
+        labeler,
         fdom_data_raw_dir,
         stage_raw_dir,
         turb_raw_dir,
@@ -35,6 +36,7 @@ class fdomDataset(data.Dataset):
         constructor
 
         PARAMS:
+        labeler: a sklearn LabelEncoder, for labeling string classes into numbers
         fdom_data_raw_dir: path to raw fdom data
         stage_raw_dir: path to raw stage data
         turb_raw_dir: path to raw turb data
@@ -45,6 +47,8 @@ class fdomDataset(data.Dataset):
         """
 
         super(fdomDataset, self).__init__()
+
+        self.le = labeler
 
         self.fdom_raw_path = fdom_data_raw_dir
         self.stage_raw_path = stage_raw_dir
@@ -113,6 +117,8 @@ class fdomDataset(data.Dataset):
         X = []
         y = []
 
+        # create one hot encoded matrix for labels
+
         for i, peak in peaks.iterrows():
             # get start and end indices
             peak_idx = peaks.loc[i, "idx_of_peak"]
@@ -125,6 +131,7 @@ class fdomDataset(data.Dataset):
 
             # use these indices to collect the data for stage and turb
             # TODO: instead of using window size, use the actual timestamps if variable length data is allowed
+            # TODO: get rid of this entire segment, we don't really need it, we are sending the whole timeline in
             # each sample follows this order: 0 = fdom, 1 = stage, 2 = turb
             sample = np.hstack(
                 (
@@ -132,13 +139,17 @@ class fdomDataset(data.Dataset):
                     stage_raw[peak_idx - window_size : peak_idx + window_size + 1],
                     turb_raw[peak_idx - window_size : peak_idx + window_size + 1],
                 )
-            ).T
-            X.append(sample.T)
+            )
+            X.append(sample)
 
             # get label
             label = truths.loc[truths["idx_of_peak"] == peak_idx, "label_of_peak"].iloc[
                 0
             ]
+
+            # convert label to normalized integer value, using passed in label encoder
+            label = self.le.transform([label])
+
             y.append(label)
 
         # assert that X and y are the same length, so we have a label for each data point
