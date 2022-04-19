@@ -76,7 +76,6 @@ class fdomDataset(data.Dataset):
         # load all datasets
         # load non augmented data
         # raw data
-        # TODO: this prob isnt needed
         fdom_raw = dm.read_in_preprocessed_timeseries(self.fdom_raw_path)
         stage_raw = dp.align_stage_to_fDOM(
             fdom_raw, dm.read_in_preprocessed_timeseries(self.stage_raw_path)
@@ -130,8 +129,6 @@ class fdomDataset(data.Dataset):
             end_timestamp = fdom_raw[end_idx][0]
 
             # use these indices to collect the data for stage and turb
-            # TODO: instead of using window size, use the actual timestamps if variable length data is allowed
-            # TODO: get rid of this entire segment, we don't really need it, we are sending the whole timeline in
             # each sample follows this order: 0 = fdom, 1 = stage, 2 = turb
             sample = np.hstack(
                 (
