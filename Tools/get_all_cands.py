@@ -5,9 +5,20 @@ from . import get_candidates as gc
 import pandas as pd
 
 
+# ~~~~~~~ FDOM/TURB ~~~~~~~
+def get_all_truths(filename) -> pd.DataFrame:
+    """
+    returns all truths in a dataframe
+
+    PARAMS:
+    filename: path to the labeled truths file
+    """
+
+    truths = pd.read_csv(filename)
+    return truths
+
+
 # ~~~~~~~ FDOM ~~~~~~~
-
-
 def get_all_cands_fDOM(
     raw_fdom_data_filename, truths_filename, is_augmented=False
 ) -> pd.DataFrame:
@@ -66,9 +77,11 @@ def get_all_truths_fDOM(filename, is_augmented=False) -> pd.DataFrame:
     """
     get all the truths for fdom
 
+    NOTE: This function is NOT NEEDED, can use the above get_all_truths function instead
+
     PARAMS:
     filename: path to the fdom truths file
-    is_augmented: if the data being passed is augmented (needed as currently no way to get FPT and FSK augmented values into these cand lists)
+    is_augmented: if the data being passed is augmented
     """
     # load in the entire truths file
     truths = pd.read_csv(filename)
@@ -76,3 +89,36 @@ def get_all_truths_fDOM(filename, is_augmented=False) -> pd.DataFrame:
 
 
 # ~~~~~~~ TURBIDITY ~~~~~~~
+def get_all_cands_turb(
+    raw_filename, truths_filename, is_augmented=False
+) -> pd.DataFrame:
+    """
+    get all turb cands
+
+    PARAMS:
+    raw_filename: path to a turbidity file with raw data
+    truths_filename: the path to the labeled data
+    is_augmented: is the data augmented or not
+    """
+
+    cands_skp = gc.get_cands_turb_SKP(raw_filename, truths_filename, is_augmented)
+
+    cands_pp = gc.get_cands_turb_PP(raw_filename, truths_filename, is_augmented)
+
+    cands_NAP = gc.get_cands_turb_NAP(raw_filename, truths_filename, is_augmented)
+
+    if not is_augmented:
+        cands_fpt = gc.get_cands_turb_FPT(raw_filename, truths_filename, is_augmented)
+
+        all_cands = pd.concat([cands_skp, cands_pp, cands_NAP, cands_fpt])
+    else:
+        all_cands = pd.concat([cands_skp, cands_pp, cands_NAP])
+
+    all_cands = all_cands.sort_values(by=["idx_of_peak"], kind="stable")
+
+    all_cands = all_cands.set_index("idx_of_peak")
+    all_cands = all_cands[~all_cands.index.duplicated(keep="first")]
+
+    all_cands = all_cands.reset_index()
+
+    return all_cands
