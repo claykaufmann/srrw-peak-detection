@@ -1,7 +1,7 @@
 """
 This file contains the time-series version of resnet, using PyTorch.
 
-Adapted from https://github.com/hsd1503/resnet1d
+Taken from https://github.com/hsd1503/resnet1d
 """
 
 import torch
