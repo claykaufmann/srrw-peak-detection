@@ -9,23 +9,19 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class Conv1dSame(nn.Module):
+class MyConv1dPadSame(nn.Module):
     """
-    extension of conv1d, adds padding='same' functionality
+    extend nn.Conv1d to support SAME padding
     """
 
-    def __init__(
-        self, in_channels, out_channels, kernel_size, stride, groups=1
-    ) -> None:
-        super(Conv1dSame, self).__init__()
-
+    def __init__(self, in_channels, out_channels, kernel_size, stride, groups=1):
+        super(MyConv1dPadSame, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.kernel_size = kernel_size
         self.stride = stride
         self.groups = groups
-
-        self.conv = nn.Conv1d(
+        self.conv = torch.nn.Conv1d(
             in_channels=self.in_channels,
             out_channels=self.out_channels,
             kernel_size=self.kernel_size,
@@ -33,49 +29,54 @@ class Conv1dSame(nn.Module):
             groups=self.groups,
         )
 
-        def forward(self, x):
-            in_dimensionality = x.shape[-1]
-
-            out_dim = in_dimensionality + self.stride - 1
-            p = max(
-                0, (out_dim - 1) * self.stride + self.kernel_size - in_dimensionality
-            )
-            pad_left = p // 2
-            pad_right = p - pad_left
-            x = F.pad(x, (pad_left, pad_right), "constant", 0)
-
-            return x
-
-
-class MaxPoolSame(nn.Module):
-    """
-    extension of maxpool1d, adds padding='same' functionality
-    """
-
-    def __init__(self, kernel_size) -> None:
-        super(MaxPoolSame, self).__init__()
-
-        self.kernel_size = kernel_size
-
-        self.stride = 1
-
-        self.max_pool = nn.MaxPool1d(kernel_size=self.kernel_size)
-
     def forward(self, x):
-        in_dimensionality = x.shape[-1]
 
-        out_dim = in_dimensionality + self.stride - 1
-        p = max(0, (out_dim - 1) * self.stride + self.kernel_size - in_dimensionality)
+        net = x
+
+        # compute pad shape
+        in_dim = net.shape[-1]
+        out_dim = (in_dim + self.stride - 1) // self.stride
+        p = max(0, (out_dim - 1) * self.stride + self.kernel_size - in_dim)
         pad_left = p // 2
         pad_right = p - pad_left
-        x = F.pad(x, (pad_left, pad_right), "constant", 0)
+        net = F.pad(net, (pad_left, pad_right), "constant", 0)
 
-        return x
+        net = self.conv(net)
+
+        return net
 
 
-class ResnetBlock(nn.Module):
+class MyMaxPool1dPadSame(nn.Module):
     """
-    Core resnet block
+    extend nn.MaxPool1d to support SAME padding
+    """
+
+    def __init__(self, kernel_size):
+        super(MyMaxPool1dPadSame, self).__init__()
+        self.kernel_size = kernel_size
+        self.stride = 1
+        self.max_pool = torch.nn.MaxPool1d(kernel_size=self.kernel_size)
+
+    def forward(self, x):
+
+        net = x
+
+        # compute pad shape
+        in_dim = net.shape[-1]
+        out_dim = (in_dim + self.stride - 1) // self.stride
+        p = max(0, (out_dim - 1) * self.stride + self.kernel_size - in_dim)
+        pad_left = p // 2
+        pad_right = p - pad_left
+        net = F.pad(net, (pad_left, pad_right), "constant", 0)
+
+        net = self.max_pool(net)
+
+        return net
+
+
+class BasicBlock(nn.Module):
+    """
+    ResNet Basic Block
     """
 
     def __init__(
@@ -89,8 +90,9 @@ class ResnetBlock(nn.Module):
         use_bn,
         use_do,
         is_first_block=False,
-    ) -> None:
-        super(ResnetBlock, self).__init__()
+    ):
+        super(BasicBlock, self).__init__()
+
         self.in_channels = in_channels
         self.kernel_size = kernel_size
         self.out_channels = out_channels
@@ -109,7 +111,7 @@ class ResnetBlock(nn.Module):
         self.bn1 = nn.BatchNorm1d(in_channels)
         self.relu1 = nn.ReLU()
         self.do1 = nn.Dropout(p=0.5)
-        self.conv1 = Conv1dSame(
+        self.conv1 = MyConv1dPadSame(
             in_channels=in_channels,
             out_channels=out_channels,
             kernel_size=kernel_size,
@@ -121,7 +123,7 @@ class ResnetBlock(nn.Module):
         self.bn2 = nn.BatchNorm1d(out_channels)
         self.relu2 = nn.ReLU()
         self.do2 = nn.Dropout(p=0.5)
-        self.conv2 = Conv1dSame(
+        self.conv2 = MyConv1dPadSame(
             in_channels=out_channels,
             out_channels=out_channels,
             kernel_size=kernel_size,
@@ -129,9 +131,10 @@ class ResnetBlock(nn.Module):
             groups=self.groups,
         )
 
-        self.max_pool = MaxPoolSame(kernel_size=self.stride)
+        self.max_pool = MyMaxPool1dPadSame(kernel_size=self.stride)
 
     def forward(self, x):
+
         identity = x
 
         # the first conv
@@ -172,7 +175,23 @@ class ResnetBlock(nn.Module):
 
 class ResNet1D(nn.Module):
     """
-    represents resnet as a whole
+
+    Input:
+        X: (n_samples, n_channel, n_length)
+        Y: (n_samples)
+
+    Output:
+        out: (n_samples)
+
+    Pararmetes:
+        in_channels: dim of input, the same as n_channel
+        base_filters: number of filters in the first several Conv layer, it will double at every 4 layers
+        kernel_size: width of kernel
+        stride: stride of kernel moving
+        groups: set larget to 1 as ResNeXt
+        n_block: number of blocks
+        n_classes: number of classes
+
     """
 
     def __init__(
@@ -204,7 +223,7 @@ class ResNet1D(nn.Module):
         self.increasefilter_gap = increasefilter_gap  # 4 for base model
 
         # first block
-        self.first_block_conv = Conv1dSame(
+        self.first_block_conv = MyConv1dPadSame(
             in_channels=in_channels,
             out_channels=base_filters,
             kernel_size=self.kernel_size,
@@ -241,7 +260,7 @@ class ResNet1D(nn.Module):
                 else:
                     out_channels = in_channels
 
-            tmp_block = ResnetBlock(
+            tmp_block = BasicBlock(
                 in_channels=in_channels,
                 out_channels=out_channels,
                 kernel_size=self.kernel_size,
