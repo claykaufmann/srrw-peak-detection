@@ -129,7 +129,7 @@ class fdomDataset(data.Dataset):
 
         for i, peak in peaks.iterrows():
             # get start and end indices
-            peak_idx = peaks.loc[i, "idx_of_peak"]
+            peak_idx = int(peak["idx_of_peak"])
 
             # use these indices to collect the data for stage and turb
             # each sample follows this order: 0 = fdom, 1 = stage, 2 = turb
