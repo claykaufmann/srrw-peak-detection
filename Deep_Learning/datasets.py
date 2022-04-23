@@ -125,8 +125,6 @@ class fdomDataset(data.Dataset):
         X = []
         y = []
 
-        # create one hot encoded matrix for labels
-
         for i, peak in peaks.iterrows():
             # get start and end indices
             peak_idx = int(peak["idx_of_peak"])
@@ -134,6 +132,7 @@ class fdomDataset(data.Dataset):
             # use these indices to collect the data for stage and turb
             # each sample follows this order: 0 = fdom, 1 = stage, 2 = turb
             # FIXME: the peak indexing here could be wrong
+            # FIXME: the augmented samples have incorrect shapes (0, 6)
             sample = np.hstack(
                 (
                     fdom_raw[peak_idx - window_size : peak_idx + window_size + 1],
@@ -155,6 +154,8 @@ class fdomDataset(data.Dataset):
 
         # assert that X and y are the same length, so we have a label for each data point
         assert len(X) == len(y)
+
+        print(X.shape)
 
         # save data and truths
         self.data = X
