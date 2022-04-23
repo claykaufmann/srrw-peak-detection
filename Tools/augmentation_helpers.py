@@ -609,4 +609,5 @@ def check_class_balance(current_balance: dict, class_labels: list) -> list:
         if lowest_balance[i][1] == curr_min:
             final_label_list.append(lowest_balance[i][0])
 
-    return final_label_list
+    # return a random item from the list
+    return random.choice(final_label_list)
