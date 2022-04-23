@@ -155,7 +155,137 @@ class fdomDataset(data.Dataset):
         # assert that X and y are the same length, so we have a label for each data point
         assert len(X) == len(y)
 
-        print(X.shape)
+        # save data and truths
+        self.data = X
+        self.truths = y
+
+    def __len__(self):
+        """
+        returns len of the dataset
+        """
+
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        """
+        returns the sample and label at index
+
+        RETURNS A SAMPLE WHERE:
+        sample[0] = raw data
+            sample[0][0] = fdom raw data
+            sample[0][1] = stage raw data
+            sample[0][2] = turb raw data
+        sample[1] = int, the encoded label for the data, encoded with passed in encoder
+        """
+
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+
+        # collect the sample, its a vector of fdom, stage, and turb
+        sample = (self.data[idx], self.truths[idx])
+
+        # return the sample
+        return sample
+
+
+class fdomAugOnlyDataset(data.Dataset):
+    """
+    the fdom dataset for only augmented data
+
+    used for training with just augmented, class balanced data
+    """
+
+    def __init__(
+        self,
+        labeler,
+        fdom_augmented_dir,
+        stage_augmented_dir,
+        turb_augmented_dir,
+        fdom_labeled_aug_dir,
+        window_size=15,
+    ) -> None:
+        """
+        constructor
+
+        PARAMS:
+        labeler: a sklearn LabelEncoder, for labeling string classes into numbers
+        fdom_data_raw_dir: path to raw fdom data
+        stage_raw_dir: path to raw stage data
+        turb_raw_dir: path to raw turb data
+        fdom_labeled_raw_dir: path to labeled raw fdom data
+        fdom_augmented_dir: path to augmented fdom data
+        stage_augmented_dir: path to augmented stage data
+        turb_augmented_dir: path to augmented turb data
+        fdom_labeled_aug_dir: path to augmented labeled fdom data
+        window_size: the width of data to use for each sample, note this is the distance before and after the main peak index
+        """
+
+        super(fdomAugOnlyDataset, self).__init__()
+
+        self.label_encoder = labeler
+
+        # augmented paths
+        self.fdom_aug_path = fdom_augmented_dir
+        self.stage_aug_path = stage_augmented_dir
+        self.turb_aug_path = turb_augmented_dir
+
+        # labeled data
+        self.fdom_aug_labeled_path = fdom_labeled_aug_dir
+
+        # generate the dataset
+        self.get_data(window_size)
+
+    def get_data(self, window_size):
+        """
+        saves the actual data into the dataset
+
+        PARAMS:
+        window_size: the size of each segment (length, in time-series data)
+        """
+        # use normal timeseries, as we are not cutting out specific data
+        fdom_raw = np.array(dm.read_in_timeseries(self.fdom_aug_path, True))
+        stage_raw = np.array(dm.read_in_timeseries(self.stage_aug_path, True))
+        turb_raw = np.array(dm.read_in_timeseries(self.turb_aug_path, True))
+
+        # get all cands from augmented data, augment cands
+        peaks = get_all_cands_fDOM(self.fdom_aug_path, self.fdom_aug_labeled_path, True)
+
+        # get all truths
+        truths = get_all_truths_fDOM(self.fdom_aug_labeled_path, True)
+
+        # initiate arrays for samples and labels that we will read data into
+        X = []
+        y = []
+
+        for i, peak in peaks.iterrows():
+            # get start and end indices
+            peak_idx = int(peak["idx_of_peak"])
+
+            # use these indices to collect the data for stage and turb
+            # each sample follows this order: 0 = fdom, 1 = stage, 2 = turb
+            # FIXME: the peak indexing here could be wrong
+            # FIXME: the augmented samples have incorrect shapes (0, 6)
+            sample = np.hstack(
+                (
+                    fdom_raw[peak_idx - window_size : peak_idx + window_size + 1],
+                    stage_raw[peak_idx - window_size : peak_idx + window_size + 1],
+                    turb_raw[peak_idx - window_size : peak_idx + window_size + 1],
+                )
+            )
+            X.append(sample)
+
+            # get label
+            label = truths.loc[truths["idx_of_peak"] == peak_idx, "label_of_peak"].iloc[
+                0
+            ]
+
+            # convert label to normalized integer value, using passed in label encoder
+            label = self.label_encoder.transform([label])
+
+            y.append(label)
+
+        # assert that X and y are the same length, so we have a label for each data point
+        assert len(X) == len(y)
 
         # save data and truths
         self.data = X
