@@ -140,17 +140,23 @@ class fdomDataset(data.Dataset):
                     turb_raw[peak_idx - window_size : peak_idx + window_size + 1],
                 )
             )
-            X.append(sample)
+            # sometimes the sample doesn't actually include any data, ensure it has the correct size
+            if sample.shape[0] == 31:
 
-            # get label
-            label = truths.loc[truths["idx_of_peak"] == peak_idx, "label_of_peak"].iloc[
-                0
-            ]
+                X.append(sample)
 
-            # convert label to normalized integer value, using passed in label encoder
-            label = self.label_encoder.transform([label])
+                # get label
+                label = truths.loc[
+                    truths["idx_of_peak"] == peak_idx, "label_of_peak"
+                ].iloc[0]
 
-            y.append(label)
+                # convert label to normalized integer value, using passed in label encoder
+                label = self.label_encoder.transform([label])
+
+                y.append(label)
+            else:
+                # if sample has incorrect shape, don't add it
+                print("WARNING: shape of a sample is incorrect, not adding it")
 
         # assert that X and y are the same length, so we have a label for each data point
         assert len(X) == len(y)
@@ -272,17 +278,21 @@ class fdomAugOnlyDataset(data.Dataset):
                     turb_raw[peak_idx - window_size : peak_idx + window_size + 1],
                 )
             )
-            X.append(sample)
+            if sample.shape[0] == 31:
 
-            # get label
-            label = truths.loc[truths["idx_of_peak"] == peak_idx, "label_of_peak"].iloc[
-                0
-            ]
+                X.append(sample)
 
-            # convert label to normalized integer value, using passed in label encoder
-            label = self.label_encoder.transform([label])
+                # get label
+                label = truths.loc[
+                    truths["idx_of_peak"] == peak_idx, "label_of_peak"
+                ].iloc[0]
 
-            y.append(label)
+                # convert label to normalized integer value, using passed in label encoder
+                label = self.label_encoder.transform([label])
+
+                y.append(label)
+            else:
+                print("WARNING: shape of a sample is incorrect, not adding it")
 
         # assert that X and y are the same length, so we have a label for each data point
         assert len(X) == len(y)
