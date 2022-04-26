@@ -581,6 +581,9 @@ def get_cands_turb_FPT(turb_filename, truths_filename, is_augmented=False):
     """
     get cands from turbidity flat plateaus
     """
+    # TODO: modify this to use the augmented file lookup for FPT peaks
+    # TODO: look over this function as a whole, may not work well
+
     # load data
     if not is_augmented:
         turb_data = dm.read_in_preprocessed_timeseries(turb_filename)
