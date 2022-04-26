@@ -260,6 +260,41 @@ def get_cands_fDOM_PLP(fdom_filename, truths_filename, is_augmented=False):
     return cands_df
 
 
+def get_cands_fDOM_FPT(fdom_filename, truths_filename, is_augmented=False):
+    """
+    get candidates for fDOM flat plateaus
+
+    NOTE: these values are HARD CODED CURRENTLY, as I do not have a good way to detect plateaus
+    NOTE: idx of peak is just the left base, as it is a flat plateau
+    """
+    # TODO: modify this to use augmented file with peak information for FPT
+
+    # load data
+    cands_manual = [[219005, 219005, 219578], [212951, 212951, 213211]]
+
+    cands_manual_df = pd.DataFrame(cands_manual)
+    cands_manual_df.columns = ["idx_of_peak", "left_base", "right_base"]
+
+    return cands_manual_df
+
+
+def get_cands_fDOM_FSK(fdom_filename, truths_filename, is_augmented=False):
+    """
+    get candidates for fDOM flat sinks
+
+    NOTE: these values are HARD CODED CURRENTLY, as I do not have a good way to detect plateaus
+    NOTE: idx of peak is just the left base, as it is a flat sink
+    """
+    # TODO: modify this to use augmented file with peak information for FSK
+
+    cands_manual = [[85747, 85747, 86462]]
+
+    cands_manual_df = pd.DataFrame(cands_manual)
+    cands_manual_df.columns = ["idx_of_peak", "left_base", "right_base"]
+
+    return cands_manual_df
+
+
 def get_cands_fDOM_NAP(fdom_filename, truths_filename, augmented_data=False):
     """
     get candidates from non anomaly peak data in fdom
@@ -396,8 +431,7 @@ def get_cands_fDOM_NAP(fdom_filename, truths_filename, augmented_data=False):
     cands_nskp = pd.DataFrame(cands)
 
     # get cands from NFPT
-    # HACK: this is hardcoded
-    # TODO: write function to get flat plateaus in fdom
+    # TODO: use function to get flat plateaus in fdom when it is written
     if not augmented_data:
         cands = [[219200, 219005, 219578, 38.57122]]
         cands_nfpt = pd.DataFrame(cands)
@@ -406,6 +440,9 @@ def get_cands_fDOM_NAP(fdom_filename, truths_filename, augmented_data=False):
         cands_df = pd.concat([cands_nskp, cands_npp, cands_nplp, cands_nfpt])
     else:
         cands_df = pd.concat([cands_nskp, cands_npp, cands_nplp])
+
+    # get cands from NFSK
+    # TODO: use the get cands FSK function when it is written
 
     cands_df = cands_df.sort_values(by=[0], kind="stable")
     # cands_df = cands_df[~cands_df.index.duplicated(keep='first')]
@@ -424,37 +461,6 @@ def get_cands_fDOM_NAP(fdom_filename, truths_filename, augmented_data=False):
     )
 
     return cands_df
-
-
-def get_cands_fDOM_FPT():
-    """
-    get candidates for fDOM flat plateaus
-
-    NOTE: these values are HARD CODED CURRENTLY, as I do not have a good way to detect plateaus
-    NOTE: idx of peak is just the left base, as it is a flat plateau
-    """
-    # load data
-    cands_manual = [[219005, 219005, 219578], [212951, 212951, 213211]]
-
-    cands_manual_df = pd.DataFrame(cands_manual)
-    cands_manual_df.columns = ["idx_of_peak", "left_base", "right_base"]
-
-    return cands_manual_df
-
-
-def get_cands_fDOM_FSK():
-    """
-    get candidates for fDOM flat sinks
-
-    NOTE: these values are HARD CODED CURRENTLY, as I do not have a good way to detect plateaus
-    NOTE: idx of peak is just the left base, as it is a flat sink
-    """
-    cands_manual = [[85747, 85747, 86462]]
-
-    cands_manual_df = pd.DataFrame(cands_manual)
-    cands_manual_df.columns = ["idx_of_peak", "left_base", "right_base"]
-
-    return cands_manual_df
 
 
 ######## TURBIDITY #########
