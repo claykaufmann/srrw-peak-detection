@@ -450,21 +450,29 @@ def get_cands_fDOM_NAP(
     cands_nskp = pd.DataFrame(cands)
 
     # get cands from NFPT
-    # TODO: use function to get flat plateaus in fdom when it is written
     cands_nfpt = get_cands_fDOM_FPT(
         fdom_filename, truths_filename, augmented_data, fpt_lookup_filename
     )
 
+    cands_nfpt = cands_nfpt.rename(
+        columns={"idx_of_peak": 0, "left_base": 1, "right_base": 2}
+    )
+
     # get cands from NFSK
-    # TODO: use the get cands FSK function when it is written
     cands_nfsk = get_cands_fDOM_FSK(
         fdom_filename, truths_filename, augmented_data, fsk_lookup_filename
+    )
+
+    cands_nfsk = cands_nfsk.rename(
+        columns={"idx_of_peak": 0, "left_base": 1, "right_base": 2}
     )
 
     cands_df = pd.concat([cands_nskp, cands_npp, cands_nplp, cands_nfpt, cands_nfsk])
 
     cands_df = cands_df.sort_values(by=[0], kind="stable")
-    # cands_df = cands_df[~cands_df.index.duplicated(keep='first')]
+
+    # cands_df = cands_df[~cands_df.index.duplicated(keep="first")]
+
     cands_df = cands_df.reset_index(drop=True)
 
     # import ground truths
