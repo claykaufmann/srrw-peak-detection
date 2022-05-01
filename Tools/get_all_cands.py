@@ -20,7 +20,11 @@ def get_all_truths(filename) -> pd.DataFrame:
 
 # ~~~~~~~ FDOM ~~~~~~~
 def get_all_cands_fDOM(
-    raw_fdom_data_filename, truths_filename, is_augmented=False
+    raw_fdom_data_filename,
+    truths_filename,
+    is_augmented=False,
+    fpt_lookup_filename=None,
+    fsk_lookup_filename=None,
 ) -> pd.DataFrame:
     """
     get all fdom candidates
@@ -48,20 +52,24 @@ def get_all_cands_fDOM(
     )
 
     cands_nap = gc.get_cands_fDOM_NAP(
-        raw_fdom_data_filename, truths_filename, is_augmented
+        raw_fdom_data_filename,
+        truths_filename,
+        is_augmented,
+        fpt_lookup_filename,
+        fsk_lookup_filename,
     )
 
-    if not is_augmented:
-        cands_fpt = gc.get_cands_fDOM_FPT()
-        cands_fsk = gc.get_cands_fDOM_FSK()
+    cands_fpt = gc.get_cands_fDOM_FPT(
+        raw_fdom_data_filename, truths_filename, is_augmented, fpt_lookup_filename
+    )
+    cands_fsk = gc.get_cands_fDOM_FSK(
+        raw_fdom_data_filename, truths_filename, is_augmented, fsk_lookup_filename
+    )
 
-        # concat dataframes
-        all_cands = pd.concat(
-            [cands_skp, cands_plp, cands_pp, cands_fpt, cands_fsk, cands_nap]
-        )
-    else:
-        # concat dataframes
-        all_cands = pd.concat([cands_skp, cands_plp, cands_pp, cands_nap])
+    # concat dataframes
+    all_cands = pd.concat(
+        [cands_skp, cands_plp, cands_pp, cands_fpt, cands_fsk, cands_nap]
+    )
 
     all_cands = all_cands.sort_values(by=["idx_of_peak"], kind="stable")
 

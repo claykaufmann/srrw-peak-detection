@@ -33,6 +33,8 @@ class fdomDataset(data.Dataset):
         stage_augmented_dir=None,
         turb_augmented_dir=None,
         fdom_labeled_aug_dir=None,
+        fpt_lookup_filename=None,
+        fsk_lookup_filename=None,
         window_size=15,
     ) -> None:
         """
@@ -70,6 +72,9 @@ class fdomDataset(data.Dataset):
         # labeled data
         self.fdom_aug_labeled_path = fdom_labeled_aug_dir
 
+        self.fpt_lookup_filename = fpt_lookup_filename
+        self.fsk_lookup_filename = fsk_lookup_filename
+
         # generate the dataset
         self.get_data(window_size)
 
@@ -97,7 +102,6 @@ class fdomDataset(data.Dataset):
         truths = get_all_truths_fDOM(self.fdom_raw_labeled_path)
 
         # load in augmented data
-        # TODO: test that the augmented data load works
         if self.fdom_aug_path is not None:
             # use normal timeseries, as we are not cutting out specific data
             fdom_aug = np.array(dm.read_in_timeseries(self.fdom_aug_path, True))
@@ -111,7 +115,11 @@ class fdomDataset(data.Dataset):
 
             # get all cands from augmented data, augment cands
             aug_peaks = get_all_cands_fDOM(
-                self.fdom_aug_path, self.fdom_aug_labeled_path, True
+                self.fdom_aug_path,
+                self.fdom_aug_labeled_path,
+                True,
+                self.fpt_lookup_filename,
+                self.fsk_lookup_filename,
             )
 
             # get all truths
@@ -208,6 +216,8 @@ class fdomAugOnlyDataset(data.Dataset):
         stage_augmented_dir,
         turb_augmented_dir,
         fdom_labeled_aug_dir,
+        fpt_lookup_filename,
+        fsk_lookup_filename,
         window_size=15,
     ) -> None:
         """
@@ -238,6 +248,9 @@ class fdomAugOnlyDataset(data.Dataset):
         # labeled data
         self.fdom_aug_labeled_path = fdom_labeled_aug_dir
 
+        self.fpt_lookup_filename = fpt_lookup_filename
+        self.fsk_lookup_filename = fsk_lookup_filename
+
         # generate the dataset
         self.get_data(window_size)
 
@@ -254,7 +267,13 @@ class fdomAugOnlyDataset(data.Dataset):
         turb_raw = np.array(dm.read_in_timeseries(self.turb_aug_path, True))
 
         # get all cands from augmented data, augment cands
-        peaks = get_all_cands_fDOM(self.fdom_aug_path, self.fdom_aug_labeled_path, True)
+        peaks = get_all_cands_fDOM(
+            self.fdom_aug_path,
+            self.fdom_aug_labeled_path,
+            True,
+            self.fpt_lookup_filename,
+            self.fsk_lookup_filename,
+        )
 
         # get all truths
         truths = get_all_truths_fDOM(self.fdom_aug_labeled_path, True)
