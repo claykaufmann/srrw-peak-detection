@@ -426,7 +426,7 @@ def get_cands_fDOM_NAP(fdom_filename, truths_filename, augmented_data=False):
     return cands_df
 
 
-def get_cands_fDOM_FPT():
+def get_cands_fDOM_FPT(raw_filename, truths_filename, is_augmented=False):
     """
     get candidates for fDOM flat plateaus
 
@@ -442,7 +442,7 @@ def get_cands_fDOM_FPT():
     return cands_manual_df
 
 
-def get_cands_fDOM_FSK():
+def get_cands_fDOM_FSK(raw_filename, truths_filename, is_augmented=False):
     """
     get candidates for fDOM flat sinks
 
