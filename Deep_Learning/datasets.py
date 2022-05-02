@@ -130,6 +130,12 @@ class fdomDataset(data.Dataset):
             peaks = pd.concat([peaks, aug_peaks])
             truths = pd.concat([truths, aug_truths])
 
+        # update raw datasets to only have necessary data
+        time = copy.deepcopy(fdom_raw)[:, 0]
+        fdom_raw = fdom_raw[:, 1]
+        stage_raw = stage_raw[:, 1]
+        turb_raw = turb_raw[:, 1]
+
         # initiate arrays for samples and labels that we will read data into
         X = []
         y = []
@@ -137,19 +143,25 @@ class fdomDataset(data.Dataset):
         for i, peak in peaks.iterrows():
             # get start and end indices
             peak_idx = int(peak["idx_of_peak"])
+            left_base = int(peak["left_base"])
+            right_base = int(peak["right_base"])
+
+            left = abs(peak_idx - left_base)
+            right = abs(peak_idx - right_base)
 
             # use these indices to collect the data for stage and turb
             # each sample follows this order: 0 = fdom, 1 = stage, 2 = turb
             # TODO instead of window size, use the actual peak left and right base
-            sample = np.hstack(
+            sample = np.stack(
                 (
-                    fdom_raw[peak_idx - window_size : peak_idx + window_size + 1],
-                    stage_raw[peak_idx - window_size : peak_idx + window_size + 1],
-                    turb_raw[peak_idx - window_size : peak_idx + window_size + 1],
+                    fdom_raw[peak_idx - left : peak_idx + right + 1],
+                    stage_raw[peak_idx - left : peak_idx + right + 1],
+                    turb_raw[peak_idx - left : peak_idx + right + 1],
+                    time[peak_idx - left : peak_idx + right + 1],
                 )
             )
             # sometimes the sample doesn't actually include any data, ensure it has the correct size
-            if sample.shape[0] == 31:
+            if sample.shape[1] > 0:
 
                 X.append(sample)
 
@@ -165,6 +177,8 @@ class fdomDataset(data.Dataset):
             else:
                 # if sample has incorrect shape, don't add it
                 print("WARNING: shape of a sample is incorrect, not adding it")
+                print(f"Error shape is: {sample.shape}")
+                print(f"Error vals: {fdom_raw[peak_idx - left : peak_idx + right + 1]}")
 
         # assert that X and y are the same length, so we have a label for each data point
         assert len(X) == len(y)
