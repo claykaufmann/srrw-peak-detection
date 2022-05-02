@@ -79,6 +79,8 @@ class fdomDataset(data.Dataset):
         # generate the dataset
         self.get_data(window_size)
 
+        print(f"{len(self.data)} candidates found.")
+
     def get_data(self, window_size):
         """
         saves the actual data into the dataset
@@ -266,6 +268,8 @@ class fdomAugOnlyDataset(data.Dataset):
 
         # generate the dataset
         self.get_data(window_size)
+
+        print(f"{len(self.data)} candidates found.")
 
     def get_data(self, window_size):
         """
