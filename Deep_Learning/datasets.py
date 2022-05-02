@@ -212,10 +212,6 @@ class fdomAugOnlyDataset(data.Dataset):
     def __init__(
         self,
         labeler,
-        fdom_data_raw_dir,
-        stage_raw_dir,
-        turb_raw_dir,
-        fdom_labeled_raw_dir,
         fdom_augmented_dir,
         stage_augmented_dir,
         turb_augmented_dir,
@@ -244,14 +240,6 @@ class fdomAugOnlyDataset(data.Dataset):
 
         self.label_encoder = labeler
 
-        # raw paths (needed to keep indices equivalent)
-        self.fdom_raw_path = fdom_data_raw_dir
-        self.stage_raw_path = stage_raw_dir
-        self.turb_raw_path = turb_raw_dir
-
-        # labeled data
-        self.fdom_raw_labeled_path = fdom_labeled_raw_dir
-
         # augmented paths
         self.fdom_aug_path = fdom_augmented_dir
         self.stage_aug_path = stage_augmented_dir
@@ -275,27 +263,16 @@ class fdomAugOnlyDataset(data.Dataset):
         """
         # use normal timeseries, as we are not cutting out specific data
         # indices select only the second row, which are the respective values
-        fdom_raw = dm.read_in_preprocessed_timeseries(self.fdom_raw_path)
-        stage_raw = dp.align_stage_to_fDOM(
-            fdom_raw, dm.read_in_preprocessed_timeseries(self.stage_raw_path)
-        )
-        turb_raw = dm.read_in_preprocessed_timeseries(self.turb_raw_path)
-
-        fdom_aug = np.array(dm.read_in_timeseries(self.fdom_aug_path, True))
-        stage_aug = np.array(dm.read_in_timeseries(self.stage_aug_path, True))
-        turb_aug = np.array(dm.read_in_timeseries(self.turb_aug_path, True))
-
-        # concat raw and augmented data
-        fdom_raw = np.concatenate([fdom_raw, fdom_aug])
-        stage_raw = np.concatenate([stage_raw, stage_aug])[:][1]
-        turb_raw = np.concatenate([turb_raw, turb_aug])[:][1]
+        fdom_raw = np.array(dm.read_in_timeseries(self.fdom_aug_path, True))
+        stage_raw = np.array(dm.read_in_timeseries(self.stage_aug_path, True))[:, 1]
+        turb_raw = np.array(dm.read_in_timeseries(self.turb_aug_path, True))[:, 1]
 
         # get the time indices
         time = copy.deepcopy(fdom_raw)
-        time = time[:][0]
+        time = time[:, 0]
 
         # make fdom just the values
-        fdom_raw = fdom_raw[:][1]
+        fdom_raw = fdom_raw[:, 1]
 
         # get all cands from augmented data, augment cands
         peaks = get_all_cands_fDOM(
@@ -322,13 +299,10 @@ class fdomAugOnlyDataset(data.Dataset):
             left = abs(peak_idx - left_base)
             right = abs(peak_idx - right_base)
 
-            print(f"Left: {left}, right: {right}")
-            print(f"Peak bounds: {peak_idx - left}, {peak_idx + right + 1}")
-
             # use these indices to collect the data for stage and turb
             # each sample follows this order: 0 = fdom, 1 = stage, 2 = turb, 3 = time
             # need to modify how we are combining these, because it does not seem to be outputting the correct shape
-            # shape should be [4, *] (where * is variable length), instead it is [3, *, 2] for some reason
+            # shape should be [*, 4] (where * is variable length), instead it is [3, *, 2] for some reason
             sample = np.stack(
                 (
                     fdom_raw[peak_idx - left : peak_idx + right + 1],
