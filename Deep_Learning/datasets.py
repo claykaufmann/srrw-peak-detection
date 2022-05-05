@@ -435,6 +435,8 @@ class turbidityDataset(data.Dataset):
         # generate the dataset
         self.get_data(window_size)
 
+        print(f"{len(self.data)} candidates found in test dataset.")
+
     def get_data(self, window_size):
         """
         collect candidates and truths, and save to dataset
@@ -573,7 +575,6 @@ class turbAugOnlyDataset(data.Dataset):
         turb_augmented_dir,
         turb_labeled_aug_dir,
         fpt_lookup_filename,
-        fsk_lookup_filename,
         window_size=15,
     ) -> None:
         super(turbAugOnlyDataset).__init__()
@@ -586,15 +587,14 @@ class turbAugOnlyDataset(data.Dataset):
         self.turb_aug_path = turb_augmented_dir
 
         # labeled data
-        self.turb_aug_labeled_path = turb_augmented_dir
+        self.turb_aug_labeled_path = turb_labeled_aug_dir
 
         self.fpt_lookup_filename = fpt_lookup_filename
-        self.fsk_lookup_filename = fsk_lookup_filename
 
         # generate the dataset
-        self.get_data(window_size)
+        self.get_data()
 
-        print(f"{len(self.data)} candidates found.")
+        print(f"{len(self.data)} candidates found in class-balanced augmented dataset.")
 
     def get_data(self):
         # use normal timeseries, as we are not cutting out specific data
@@ -610,9 +610,9 @@ class turbAugOnlyDataset(data.Dataset):
         # make turb just the values
         turb_raw = turb_raw[:, 1]
 
-        peaks = get_all_cands_turb(self.turb_aug_path, self.turb_labeled_path, True)
+        peaks = get_all_cands_turb(self.turb_aug_path, self.turb_aug_labeled_path, True)
 
-        truths = get_all_truths(self.turb_aug_labeled_path, True)
+        truths = get_all_truths(self.turb_aug_labeled_path)
 
         # instantiate arrays to load values into to be saved
         X = []
