@@ -152,8 +152,7 @@ class fdomDataset(data.Dataset):
             right = abs(peak_idx - right_base)
 
             # use these indices to collect the data for stage and turb
-            # each sample follows this order: 0 = fdom, 1 = stage, 2 = turb
-            # TODO instead of window size, use the actual peak left and right base
+            # each sample follows this order: 0 = fdom, 1 = stage, 2 = turb, 3 = time
             sample = [
                 fdom_raw[peak_idx - left : peak_idx + right + 1].tolist(),
                 stage_raw[peak_idx - left : peak_idx + right + 1].tolist(),
@@ -454,14 +453,12 @@ class turbidityDataset(data.Dataset):
         turb_raw = dm.read_in_preprocessed_timeseries(self.turb_raw_path)
 
         # get cands from non augmented data
-        # FIXME: ensure this is correct
         peaks = get_all_cands_turb(self.turb_raw_path, self.turb_raw_labeled_path)
 
         # get truths for said peaks
         truths = get_all_truths(self.turb_raw_labeled_path)
 
         # load augmented data
-        # TODO: test that the augmented data load works
         if self.turb_aug_path is not None:
             # use normal timeseries, as we are not cutting out specific data
             fdom_aug = np.array(dm.read_in_timeseries(self.fdom_aug_path, True))
@@ -485,33 +482,49 @@ class turbidityDataset(data.Dataset):
             peaks = pd.concat([peaks, aug_peaks])
             truths = pd.concat([truths, aug_truths])
 
+        # get time, remove time from other datasets
+        time = copy.deepcopy(turb_raw)[:, 0]
+        turb_raw = turb_raw[:, 1]
+        stage_raw = stage_raw[:, 1]
+        fdom_raw = fdom_raw[:, 1]
+
         # instantiate arrays to load values into to be saved
         X = []
         Y = []
 
         for i, peak in peaks.iterrows():
             # get start and end indices
-            peak_idx = peaks.loc[i, "idx_of_peak"]
+            peak_idx = int(peak["idx_of_peak"])
+            left_base = int(peak["left_base"])
+            right_base = int(peak["right_base"])
 
-            # each sample follows this order: 0 = fdom, 1 = stage, 2 = turb
-            # FIXME: the peak indexing here could be wrong
-            sample = np.hstack(
-                (
-                    fdom_raw[peak_idx - window_size : peak_idx + window_size + 1],
-                    stage_raw[peak_idx - window_size : peak_idx + window_size + 1],
-                    turb_raw[peak_idx - window_size : peak_idx + window_size + 1],
-                )
-            )
-            X.append(sample)
+            left = abs(peak_idx - left_base)
+            right = abs(peak_idx - right_base)
 
-            # get label
-            label = truths.loc[truths["idx_of_peak"] == peak_idx, "label_of_peak"].iloc[
-                0
+            # each sample follows this order: 0 = fdom, 1 = stage, 2 = turb, 3 = time
+            sample = [
+                fdom_raw[peak_idx - left : peak_idx + right + 1].tolist(),
+                stage_raw[peak_idx - left : peak_idx + right + 1].tolist(),
+                turb_raw[peak_idx - left : peak_idx + right + 1].tolist(),
+                time[peak_idx - left : peak_idx + right + 1].tolist(),
             ]
 
-            # convert label to normalized integer value, using passed in label encoder
-            label = self.label_encoder.transform([label])
-            Y.append(label)
+            if len(sample[0]) > 0:
+                X.append(sample)
+
+                # get label
+                label = truths.loc[
+                    truths["idx_of_peak"] == peak_idx, "label_of_peak"
+                ].iloc[0]
+
+                # convert label to normalized integer value, using passed in label encoder
+                label = self.label_encoder.transform([label])
+                Y.append(label)
+
+            else:
+                print("WARNING: shape of a sample is incorrect, not adding it")
+                print(f"Error shape is: {sample.shape}")
+                print(f"Error vals: {turb_raw[peak_idx - left : peak_idx + right + 1]}")
 
         assert len(X) == len(Y)
 
@@ -528,10 +541,136 @@ class turbidityDataset(data.Dataset):
             sample[0][0] = fdom raw data
             sample[0][1] = stage raw data
             sample[0][2] = turb raw data
+            sample[0][3] = time
         sample[1] = int, the label for the data encoded with passed in encoder to init
         """
 
-        # HACK: this may not be needed at all
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+
+        sample = (self.data[idx], self.truths[idx])
+
+        return sample
+
+    def __len__(self):
+        """
+        return the length of the dataset
+        """
+
+        return len(self.data)
+
+
+class turbAugOnlyDataset(data.Dataset):
+    """
+    augmented only for class balance
+    """
+
+    def __init__(
+        self,
+        labeler,
+        fdom_augmented_dir,
+        stage_augmented_dir,
+        turb_augmented_dir,
+        turb_labeled_aug_dir,
+        fpt_lookup_filename,
+        fsk_lookup_filename,
+        window_size=15,
+    ) -> None:
+        super(turbAugOnlyDataset).__init__()
+
+        self.label_encoder = labeler
+
+        # augmented paths
+        self.fdom_aug_path = fdom_augmented_dir
+        self.stage_aug_path = stage_augmented_dir
+        self.turb_aug_path = turb_augmented_dir
+
+        # labeled data
+        self.turb_aug_labeled_path = turb_augmented_dir
+
+        self.fpt_lookup_filename = fpt_lookup_filename
+        self.fsk_lookup_filename = fsk_lookup_filename
+
+        # generate the dataset
+        self.get_data(window_size)
+
+        print(f"{len(self.data)} candidates found.")
+
+    def get_data(self):
+        # use normal timeseries, as we are not cutting out specific data
+        # indices select only the second row, which are the respective values
+        fdom_raw = np.array(dm.read_in_timeseries(self.fdom_aug_path, True))[:, 1]
+        stage_raw = np.array(dm.read_in_timeseries(self.stage_aug_path, True))[:, 1]
+        turb_raw = np.array(dm.read_in_timeseries(self.turb_aug_path, True))
+
+        # get the time indices
+        time = copy.deepcopy(turb_raw)
+        time = time[:, 0]
+
+        # make turb just the values
+        turb_raw = turb_raw[:, 1]
+
+        peaks = get_all_cands_turb(self.turb_aug_path, self.turb_labeled_path, True)
+
+        truths = get_all_truths(self.turb_aug_labeled_path, True)
+
+        # instantiate arrays to load values into to be saved
+        X = []
+        Y = []
+
+        for i, peak in peaks.iterrows():
+            # get start and end indices
+            peak_idx = int(peak["idx_of_peak"])
+            left_base = int(peak["left_base"])
+            right_base = int(peak["right_base"])
+
+            left = abs(peak_idx - left_base)
+            right = abs(peak_idx - right_base)
+
+            # each sample follows this order: 0 = fdom, 1 = stage, 2 = turb, 3 = time
+            sample = [
+                fdom_raw[peak_idx - left : peak_idx + right + 1].tolist(),
+                stage_raw[peak_idx - left : peak_idx + right + 1].tolist(),
+                turb_raw[peak_idx - left : peak_idx + right + 1].tolist(),
+                time[peak_idx - left : peak_idx + right + 1].tolist(),
+            ]
+
+            if len(sample[0]) > 0:
+                X.append(sample)
+
+                # get label
+                label = truths.loc[
+                    truths["idx_of_peak"] == peak_idx, "label_of_peak"
+                ].iloc[0]
+
+                # convert label to normalized integer value, using passed in label encoder
+                label = self.label_encoder.transform([label])
+                Y.append(label)
+
+            else:
+                print("WARNING: shape of a sample is incorrect, not adding it")
+                print(f"Error shape is: {sample.shape}")
+                print(f"Error vals: {turb_raw[peak_idx - left : peak_idx + right + 1]}")
+
+        assert len(X) == len(Y)
+
+        # save data
+        self.data = X
+        self.truths = Y
+
+    def __getitem__(self, idx):
+        """
+        returns the sample and label at index
+
+        RETURNS A SAMPLE WHERE:
+        sample[0] = raw data
+            sample[0][0] = fdom raw data
+            sample[0][1] = stage raw data
+            sample[0][2] = turb raw data
+            sample[0][3] = time
+        sample[1] = int, the label for the data encoded with passed in encoder to init
+        """
+
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
