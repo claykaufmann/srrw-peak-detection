@@ -151,7 +151,7 @@ def test(model, dataloader, device, le):
     test the model
     """
     model.load_state_dict(torch.load("./results/models/turb/raw/may-sixth.pth"))
-    model.test()
+    model.eval()
 
     y_pred = []
     y_true = []
