@@ -9,4 +9,5 @@ dependencies:
   - tqdm
   - pytorch
   - pip
+  - python=3.10.4
 prefix: /opt/homebrew/Caskroom/miniforge/base/envs/srrw
