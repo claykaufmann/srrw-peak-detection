@@ -18,6 +18,39 @@ from Tools.get_all_cands import (
 )
 
 
+def collate_fn_pad(batch, device):
+    """
+    Pads batch of variable length
+    """
+
+    label_list, sample_list, lengths = [], [], []
+
+    for (sample, label) in batch:
+        label_list.append(label)
+        # convert sample to tensor
+        sample = torch.tensor(
+            sample, dtype=torch.float64
+        ).T  # tranpose to send in data, pad_sequences won't accept original
+
+        # append to lengths
+        lengths.append(sample.shape[0])
+
+        sample_list.append(sample)
+
+    label_list = torch.tensor(label_list, dtype=torch.int64)
+
+    sample_list = torch.nn.utils.rnn.pad_sequence(
+        sample_list, batch_first=True, padding_value=0
+    )
+
+    # re-tranpose list, so we go back to a 4 channel dataset
+    sample_list = sample_list.transpose(1, 2)
+
+    lengths = torch.tensor(lengths, dtype=torch.long)
+
+    return [sample_list.to(device), label_list.to(device), lengths]
+
+
 class fdomDataset(data.Dataset):
     """
     the fdom dataset
