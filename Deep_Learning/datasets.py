@@ -635,7 +635,7 @@ class turbAugOnlyDataset(data.Dataset):
                 time[peak_idx - left : peak_idx + right + 1].tolist(),
             ]
 
-            if len(sample[0]) > 0:
+            if len(sample) >= 4 and len(sample[0]) > 0:
                 X.append(sample)
 
                 # get label
