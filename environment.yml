@@ -6,10 +6,7 @@ dependencies:
   - matplotlib
   - seaborn
   - jupyter
-  - tensorflow
   - tqdm
-  - progressbar2
   - pytorch
-  - torchvision
   - pip
 prefix: /opt/homebrew/Caskroom/miniforge/base/envs/srrw
