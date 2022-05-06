@@ -31,7 +31,7 @@ WINDOW_SIZE = 15  # the size of each data segment
 TEST_SIZE = 0.10
 SEED = 42
 BATCH_SIZE = 32
-EPOCHS = 10
+EPOCHS = 30
 
 # Paths to data files
 fdom_raw_data = "../Data/converted_data/julian_format/fDOM_raw_10.1.2011-9.4.2020.csv"
@@ -201,11 +201,11 @@ def main():
         window_size=WINDOW_SIZE,
     )
 
-    # split test into validation and test
-    val_size = int(0.70 * len(test_dataset))
-    test_size = len(test_dataset) - val_size
-    val_dataset, test_dataset = torch.utils.data.random_split(
-        test_dataset, [val_size, test_size]
+    # split training into train and validation
+    train_size = int(0.85 * len(train_dataset))
+    test_size = len(train_dataset) - train_size
+    train_dataset, val_dataset = torch.utils.data.random_split(
+        train_dataset, [train_size, test_size]
     )
 
     # create dataloaders
@@ -259,7 +259,7 @@ def main():
     torch.save(model.state_dict(), "./results/models/turb/raw/may-sixth.pth")
 
     # TEST MODEL
-    y_pred, y_true = test(model, testloader, device)
+    y_pred, y_true = test(model, testloader, device, le)
 
     # build conf matrix
     conf = confusion_matrix(y_true, y_pred, labels=classes)
