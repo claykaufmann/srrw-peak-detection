@@ -32,6 +32,7 @@ TEST_SIZE = 0.10
 SEED = 42
 BATCH_SIZE = 32
 EPOCHS = 30
+LEARNING_RATE = 1e-3
 
 # Paths to data files
 fdom_raw_data = "../Data/converted_data/julian_format/fDOM_raw_10.1.2011-9.4.2020.csv"
@@ -116,7 +117,9 @@ def validation(model, loss_fn, dataloader, device):
     return total_loss / len(dataloader)
 
 
-def fit(model, opt, loss_fn, train_dataloader, val_dataloader, epochs, device):
+def fit(
+    model, opt, loss_fn, train_dataloader, val_dataloader, epochs, device, scheduler
+):
     """
     fit the model
     """
@@ -136,6 +139,9 @@ def fit(model, opt, loss_fn, train_dataloader, val_dataloader, epochs, device):
         print(f"Training Loss: {train_loss}")
         print(f"Validation Loss: {validation_loss}")
         print()
+
+        # step scheduler
+        scheduler.step()
 
     return train_loss_list, validation_loss_list
 
@@ -247,13 +253,22 @@ def main():
     model = model.float()
 
     # Optimizer/criterion
-    optimizer = optim.Adam(model.parameters(), lr=1e-3)
+    optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+
+    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.1)
 
     criterion = nn.CrossEntropyLoss().to(device)
 
     # call fit function
     train_loss_list, validation_loss_list = fit(
-        model, optimizer, criterion, trainloader, val_loader, EPOCHS, device
+        model,
+        optimizer,
+        criterion,
+        trainloader,
+        val_loader,
+        EPOCHS,
+        device,
+        lr_scheduler,
     )
 
     torch.save(model.state_dict(), "./results/models/turb/raw/may-sixth.pth")
