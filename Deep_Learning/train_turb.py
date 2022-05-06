@@ -307,6 +307,8 @@ def main():
     plt.title(label="Turbidity Peak Detection Ratio Confusion Matrix")
     plt.show()
 
+    # might be a better way to save?
+    # plt.imsave("./results/graphics/turb/raw/may-6.png")
     plot.get_figure().savefig("./results/graphics/turb/raw/may-6.png")
 
 
