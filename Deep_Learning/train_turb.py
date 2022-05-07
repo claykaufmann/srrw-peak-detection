@@ -31,8 +31,8 @@ WINDOW_SIZE = 15  # the size of each data segment
 TEST_SIZE = 0.10
 SEED = 42
 BATCH_SIZE = 32
-EPOCHS = 30
-LEARNING_RATE = 1e-3
+EPOCHS = 20
+LEARNING_RATE = 1e-4
 
 # Paths to data files
 fdom_raw_data = "../Data/converted_data/julian_format/fDOM_raw_10.1.2011-9.4.2020.csv"

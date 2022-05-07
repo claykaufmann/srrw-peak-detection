@@ -15,7 +15,7 @@
 #SBATCH --mem=30G
 
 # Run for x minutes
-#SBATCH --time=600
+#SBATCH --time=1000
 
 # Name of job
 #SBATCH --job-name=SleepersRiverTurbidityPeakDetection
