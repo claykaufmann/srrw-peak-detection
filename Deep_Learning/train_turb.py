@@ -255,7 +255,7 @@ def main():
     # Optimizer/criterion
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
-    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.1)
+    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, patience=2)
 
     criterion = nn.CrossEntropyLoss().to(device)
 
