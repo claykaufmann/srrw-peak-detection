@@ -358,3 +358,6 @@ def main():
     plot.get_figure().savefig(
         "./results/graphics/turb/kfold/may-9-conf-totals-balanced-test.png"
     )
+
+
+main()
