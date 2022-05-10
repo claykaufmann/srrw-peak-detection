@@ -3,10 +3,10 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from sklearn import preprocessing
-from Deep_Learning.resnet import ResNet1D
+from Anomaly_Detection.Deep_Learning.resnet import ResNet1D
 from tqdm import tqdm
 from sklearn.model_selection import TimeSeriesSplit
-from Deep_Learning.datasets import fdomAugOnlyDataset, collate_fn_pad
+from Anomaly_Detection.Deep_Learning.datasets import fdomAugOnlyDataset, collate_fn_pad
 from sklearn.metrics import (
     confusion_matrix,
     classification_report,
