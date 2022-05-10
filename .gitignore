@@ -8,4 +8,4 @@
 **/*.pyc
 *~
 Data/augmented_data/
-Deep_Learning/results
+Anomaly_Detection/Deep_Learning/results/models
