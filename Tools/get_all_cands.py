@@ -1,7 +1,4 @@
-import sys
-
-sys.path.insert(1, "../")
-from . import get_candidates as gc
+import Tools.get_candidates as gc
 import pandas as pd
 
 

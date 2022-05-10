@@ -11,9 +11,6 @@ This module contains the following functions:
 import numpy as np
 import pickle
 import copy
-import sys
-
-sys.path.insert(1, "../")
 from Tools.data_processing import smooth_data, find_turning_points
 from scipy.signal import find_peaks
 

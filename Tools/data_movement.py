@@ -56,7 +56,7 @@ def read_in_preprocessed_timeseries(
     interpolate small missing data intervals
 
     in_file: file path
-    delete_range_filename: the path to the filename that has the time ranges for data to be deleted from the timeseries
+    delete_range_filename: the path to the filename that has the time ranges for data to be deleted from the
     return:  preprocessed data
     """
 
