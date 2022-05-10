@@ -269,6 +269,8 @@ def get_cands_fDOM_FPT(
     NOTE: these values are HARD CODED CURRENTLY, as I do not have a good way to detect plateaus
     NOTE: idx of peak is just the left base, as it is a flat plateau
     """
+    # TODO: modify this to use augmented file with peak information for FPT
+
     if not is_augmented:
         # load raw original data with hardcoded vals
         cands = [[219005, 219005, 219578], [212951, 212951, 213211]]
@@ -292,6 +294,8 @@ def get_cands_fDOM_FSK(
     NOTE: these values are HARD CODED CURRENTLY, as I do not have a good way to detect plateaus
     NOTE: idx of peak is just the left base, as it is a flat sink
     """
+    # TODO: modify this to use augmented file with peak information for FSK
+
     if not is_augmented:
         cands = [[85747, 85747, 86462]]
 
@@ -487,9 +491,7 @@ def get_cands_fDOM_NAP(
 
 
 ######## TURBIDITY #########
-def get_cands_turb_PP(
-    turb_filename, truths_filename, is_augmented=False, delete_range_filename=None
-):
+def get_cands_turb_PP(turb_filename, truths_filename, is_augmented=False):
     """
     Get candidates from turbidity phantom peaks
     """
@@ -510,15 +512,10 @@ def get_cands_turb_PP(
 
     turb_peaks, turb_props = get_candidates(turb_data, turb_cand_params)
 
-    # delete data ranges default argument, from big refactor
-    # assume the file calling this function is from top level, if no argument passed
-    if delete_range_filename == None:
-        delete_range_filename = "Data/misc/flat_plat_ranges.txt"
-
     # if not augmented data, we need to delete the missing range
     if not is_augmented:
         turb_peaks, turb_props = dp.delete_missing_data_peaks(
-            turb_data, turb_peaks, turb_props, delete_range_filename
+            turb_data, turb_peaks, turb_props, "../Data/misc/flat_plat_ranges.txt"
         )
 
     turb_cand = [
@@ -677,9 +674,7 @@ def get_cands_turb_FPT(turb_filename, truths_filename, is_augmented=False):
     return cands_df
 
 
-def get_cands_turb_NAP(
-    turb_filename, truths_filename, is_augmented=False, delete_data_ranges_filename=None
-):
+def get_cands_turb_NAP(turb_filename, truths_filename, is_augmented=False):
     """
     get all candidates from non anomaly peak data in turb
     """
@@ -700,13 +695,9 @@ def get_cands_turb_NAP(
 
     turb_peaks, turb_props = get_candidates(turb_data, turb_cand_params)
 
-    # from big refactor, delete data ranges, make assumpton runner is from top level
-    if delete_data_ranges_filename == None:
-        delete_data_ranges_filename = "Data/misc/flat_plat_ranges.txt"
-
     if not is_augmented:
         turb_peaks, turb_props = dp.delete_missing_data_peaks(
-            turb_data, turb_peaks, turb_props, delete_data_ranges_filename
+            turb_data, turb_peaks, turb_props, "../Data/misc/flat_plat_ranges.txt"
         )
 
     turb_cand = [

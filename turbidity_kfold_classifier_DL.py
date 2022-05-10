@@ -7,9 +7,8 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import TimeSeriesSplit
-import sys
 from sklearn import preprocessing
-from resnet import ResNet1D
+from Deep_Learning.resnet import ResNet1D
 from tqdm import tqdm
 from sklearn.model_selection import StratifiedKFold
 from torchsummary import summary
@@ -23,12 +22,18 @@ from sklearn.metrics import (
 )
 import matplotlib.pyplot as plt
 import seaborn as sn
-
-sys.path.insert(1, "../")
-
-from datasets import turbAugOnlyDataset
+from Deep_Learning.datasets import turbAugOnlyDataset, collate_fn_pad
 import copy
 from functools import partial
+
+
+# util function
+def reset_weights(model):
+    for layer in model.children():
+        if hasattr(layer, "reset_parameters"):
+            print(f"reset trainable params of layer = {layer}")
+            layer.reset_parameters()
+
 
 # Hyperparams
 WINDOW_SIZE = 15  # the size of each data segment
@@ -38,66 +43,20 @@ BATCH_SIZE = 32
 # this is the number of epochs per fold, but because data is already batched,
 #   when larger than 1, training takes a long time
 EPOCHS = 3
-
 SPLITS = 5
 
 # Paths to data files
-fdom_raw_data = "../Data/converted_data/julian_format/fDOM_raw_10.1.2011-9.4.2020.csv"
-stage_raw_data = "../Data/converted_data/julian_format/stage_10.1.11-1.1.19.csv"
-turb_raw_data = (
-    "../Data/converted_data/julian_format/turbidity_raw_10.1.2011_9.4.2020.csv"
-)
+fdom_raw_data = "Data/converted_data/julian_format/fDOM_raw_10.1.2011-9.4.2020.csv"
+stage_raw_data = "Data/converted_data/julian_format/stage_10.1.11-1.1.19.csv"
+turb_raw_data = "Data/converted_data/julian_format/turbidity_raw_10.1.2011_9.4.2020.csv"
+turb_labeled = "Data/labeled_data/ground_truths/turb/turb_all_julian_0k-300k.csv"
 
-turb_labeled = "../Data/labeled_data/ground_truths/turb/turb_all_julian_0k-300k.csv"
-
-fdom_raw_augmented = "../Data/augmented_data/turb/unlabeled/unlabeled_fdom.csv"
-turb_labeled_augmented = "../Data/augmented_data/turb/labeled/labeled_turb_peaks.csv"
-
-turb_augmented_raw_data = "../Data/augmented_data/turb/unlabeled/unlabeled_turb.csv"
-
-stage_augmented_data_fn = "../Data/augmented_data/turb/unlabeled/unlabeled_stage.csv"
-
-turb_fpt_lookup_path = "../Data/augmented_data/turb/fpt_lookup.csv"
-
-# util functions
-def reset_weights(model):
-    for layer in model.children():
-        if hasattr(layer, "reset_parameters"):
-            print(f"reset trainable params of layer = {layer}")
-            layer.reset_parameters()
-
-
-def collate_fn_pad(batch, device):
-    """
-    Pads batch of variable length
-    """
-
-    label_list, sample_list, lengths = [], [], []
-
-    for (sample, label) in batch:
-        label_list.append(label)
-        # convert sample to tensor
-        sample = torch.tensor(
-            sample, dtype=torch.float64
-        ).T  # tranpose to send in data, pad_sequences won't accept original
-
-        # append to lengths
-        lengths.append(sample.shape[0])
-
-        sample_list.append(sample)
-
-    label_list = torch.tensor(label_list, dtype=torch.int64)
-
-    sample_list = torch.nn.utils.rnn.pad_sequence(
-        sample_list, batch_first=True, padding_value=0
-    )
-
-    # re-tranpose list, so we go back to a 4 channel dataset
-    sample_list = sample_list.transpose(1, 2)
-
-    lengths = torch.tensor(lengths, dtype=torch.long)
-
-    return [sample_list.to(device), label_list.to(device), lengths]
+# augmented files
+fdom_raw_augmented = "Data/augmented_data/turb/unlabeled/unlabeled_fdom.csv"
+turb_labeled_augmented = "Data/augmented_data/turb/labeled/labeled_turb_peaks.csv"
+turb_augmented_raw_data = "Data/augmented_data/turb/unlabeled/unlabeled_turb.csv"
+stage_augmented_data_fn = "Data/augmented_data/turb/unlabeled/unlabeled_stage.csv"
+turb_fpt_lookup_path = "Data/augmented_data/turb/fpt_lookup.csv"
 
 
 def main():

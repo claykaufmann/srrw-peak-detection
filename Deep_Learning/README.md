@@ -1,15 +1,12 @@
 # Deep Learning
 
-The files in this folder are my attempt at training a model with deep learning
+This folder contains Jupyter Notebooks, and utilities for the Deep Learning segment of the peak detection project.
 
 ## File Structure
 
-Yes, this needs to be in its own folder instead of the `Anomaly_Detection` folder, due to the core structure of the project. Ideally this would not be the case, but completely refactoring the project at this point is simply not worth it.
+`datasets.py`: the pytorch datasets for use with the deep learning classifiers
+`resnet.py`: the 1D resnet implementation for use with deep learning
 
-### fdom
+### Jupyter Notebooks
 
-This folder contains the fdom model trainer.
-
-### turb
-
-This folder contaisn the turb model trainer
+The `fdom.ipynb` and `turb.ipynb` represent very rudimentary attempts at deep learning for peak detection. They leverage a simple train/test split of 85% train data, 15% test data. The main deep learning classifiers use KFold cross validation, and as such those should be relied upon for actual classification. These two files are here simply for testing purposes. They may or may not function correctly.
