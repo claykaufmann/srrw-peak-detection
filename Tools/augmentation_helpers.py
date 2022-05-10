@@ -5,7 +5,6 @@ import math
 import sys
 
 # so we can import tools module
-sys.path.insert(1, "../")
 import Tools.data_processing as dp
 from datetime import timedelta
 import pandas as pd

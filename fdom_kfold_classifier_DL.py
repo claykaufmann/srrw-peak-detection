@@ -2,14 +2,11 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import sys
 from sklearn import preprocessing
-from resnet import ResNet1D
+from Anomaly_Detection.Deep_Learning.resnet import ResNet1D
 from tqdm import tqdm
 from sklearn.model_selection import TimeSeriesSplit
-
-sys.path.insert(1, "../")
-from datasets import fdomAugOnlyDataset
+from Anomaly_Detection.Deep_Learning.datasets import fdomAugOnlyDataset, collate_fn_pad
 from sklearn.metrics import (
     confusion_matrix,
     classification_report,
@@ -25,45 +22,12 @@ import seaborn as sn
 import pandas as pd
 from functools import partial
 
-# util functions
+# util function
 def reset_weights(model):
     for layer in model.children():
         if hasattr(layer, "reset_parameters"):
             print(f"reset trainable params of layer = {layer}")
             layer.reset_parameters()
-
-
-def collate_fn_pad(batch, device):
-    """
-    Pads batch of variable length
-    """
-
-    label_list, sample_list, lengths = [], [], []
-
-    for (sample, label) in batch:
-        label_list.append(label)
-        # convert sample to tensor
-        sample = torch.tensor(
-            sample, dtype=torch.float64
-        ).T  # tranpose to send in data, pad_sequences won't accept original
-
-        # append to lengths
-        lengths.append(sample.shape[0])
-
-        sample_list.append(sample)
-
-    label_list = torch.tensor(label_list, dtype=torch.int64)
-
-    sample_list = torch.nn.utils.rnn.pad_sequence(
-        sample_list, batch_first=True, padding_value=0
-    )
-
-    # re-tranpose list, so we go back to a 4 channel dataset
-    sample_list = sample_list.transpose(1, 2)
-
-    lengths = torch.tensor(lengths, dtype=torch.long)
-
-    return [sample_list.to(device), label_list.to(device), lengths]
 
 
 # Hyperparams
@@ -74,25 +38,21 @@ BATCH_SIZE = 32
 # this is the number of epochs per fold, but because data is already batched,
 #   when larger than 1, training takes a long time
 EPOCHS = 5
-
 SPLITS = 5
 
 # Paths to data files
-fdom_raw_data = "../Data/converted_data/julian_format/fDOM_raw_10.1.2011-9.4.2020.csv"
-stage_raw_data = "../Data/converted_data/julian_format/stage_10.1.11-1.1.19.csv"
-turb_raw_data = (
-    "../Data/converted_data/julian_format/turbidity_raw_10.1.2011_9.4.2020.csv"
-)
-fdom_labeled = "../Data/labeled_data/ground_truths/fDOM/fDOM_all_julian_0k-300k.csv"
+fdom_raw_data = "Data/converted_data/julian_format/fDOM_raw_10.1.2011-9.4.2020.csv"
+stage_raw_data = "Data/converted_data/julian_format/stage_10.1.11-1.1.19.csv"
+turb_raw_data = "Data/converted_data/julian_format/turbidity_raw_10.1.2011_9.4.2020.csv"
+fdom_labeled = "Data/labeled_data/ground_truths/fDOM/fDOM_all_julian_0k-300k.csv"
 
 # augmented files
-fdom_raw_augmented = "../Data/augmented_data/fdom/unlabeled/unlabeled_fdom.csv"
-fdom_labeled_augmented = "../Data/augmented_data/fdom/labeled/labeled_fdom_peaks.csv"
-turb_augmented_raw_data = "../Data/augmented_data/fdom/unlabeled/unlabeled_turb.csv"
-stage_augmented_data_fn = "../Data/augmented_data/fdom/unlabeled/unlabeled_stage.csv"
-
-fdom_fpt_lookup_path = "../Data/augmented_data/fdom/fpt_lookup.csv"
-fdom_fsk_lookup_path = "../Data/augmented_data/fdom/fsk_lookup.csv"
+fdom_raw_augmented = "Data/augmented_data/fdom/unlabeled/unlabeled_fdom.csv"
+fdom_labeled_augmented = "Data/augmented_data/fdom/labeled/labeled_fdom_peaks.csv"
+turb_augmented_raw_data = "Data/augmented_data/fdom/unlabeled/unlabeled_turb.csv"
+stage_augmented_data_fn = "Data/augmented_data/fdom/unlabeled/unlabeled_stage.csv"
+fdom_fpt_lookup_path = "Data/augmented_data/fdom/fpt_lookup.csv"
+fdom_fsk_lookup_path = "Data/augmented_data/fdom/fsk_lookup.csv"
 
 
 def main():
@@ -136,11 +96,17 @@ def main():
         test_subsampler = torch.utils.data.SubsetRandomSampler(test_ids)
 
         trainloader = torch.utils.data.DataLoader(
-            dataset, batch_size=BATCH_SIZE, sampler=train_subsampler
+            dataset,
+            batch_size=BATCH_SIZE,
+            sampler=train_subsampler,
+            collate_fn=partial(collate_fn_pad, device=device),
         )
 
         testloader = torch.utils.data.DataLoader(
-            dataset, batch_size=BATCH_SIZE, sampler=test_subsampler
+            dataset,
+            batch_size=BATCH_SIZE,
+            sampler=test_subsampler,
+            collate_fn=partial(collate_fn_pad, device=device),
         )
 
         # init model
