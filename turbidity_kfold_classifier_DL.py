@@ -8,7 +8,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import TimeSeriesSplit
 from sklearn import preprocessing
-from Deep_Learning.resnet import ResNet1D
+from Anomaly_Detection.Deep_Learning.resnet import ResNet1D
 from tqdm import tqdm
 from sklearn.model_selection import StratifiedKFold
 from torchsummary import summary
@@ -22,7 +22,7 @@ from sklearn.metrics import (
 )
 import matplotlib.pyplot as plt
 import seaborn as sn
-from Deep_Learning.datasets import turbAugOnlyDataset, collate_fn_pad
+from Anomaly_Detection.Deep_Learning.datasets import turbAugOnlyDataset, collate_fn_pad
 import copy
 from functools import partial
 
