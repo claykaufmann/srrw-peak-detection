@@ -1,14 +1,10 @@
 import pandas as pd
 import numpy as np
-import sys
 import copy
 import matplotlib.pyplot as plt
 import seaborn as sn
-
 from sklearn.metrics import confusion_matrix
-from Multiclass_Detection.get_cands import get_all_cands_fDOM
-
-sys.path.insert(1, "../../")
+from Tools.get_all_cands import get_all_cands_fDOM
 from Tools.get_candidates import get_candidates
 
 

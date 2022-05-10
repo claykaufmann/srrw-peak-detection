@@ -48,21 +48,30 @@ def read_in_ground_truths_data(filename: str, is_julian: bool = True) -> list[li
     return truths
 
 
-def read_in_preprocessed_timeseries(in_file: str) -> np.ndarray:
+def read_in_preprocessed_timeseries(
+    in_file: str, delete_range_filename=None
+) -> np.ndarray:
     """
     Read timseries in from csv, trim to correct length, delete missing data ranges,
     interpolate small missing data intervals
 
     in_file: file path
+    delete_range_filename: the path to the filename that has the time ranges for data to be deleted from the timeseries
     return:  preprocessed data
     """
+
+    # NOTE: this was changed after a large refactor, to keep backwards compatibility the default argument was added
+    # we assume that the file calling this function is top level, if it isn't then the path needs to be passed in
+    if delete_range_filename == None:
+        delete_range_filename = "Data/misc/delete_date_ranges.txt"
+
     data = np.array(read_in_timeseries(in_file, True))
     start_time = 2456042.5
     end_time = 2458484.5
 
     data = dp.trim_timeseries(data, start_time, end_time)
 
-    data = dp.delete_from_timeseries(data, "../Data/misc/delete_date_ranges.txt")
+    data = dp.delete_from_timeseries(data, delete_range_filename)
 
     data = dp.interpolate_missing_intervals(data)
 

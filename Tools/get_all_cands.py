@@ -34,6 +34,12 @@ def get_all_cands_fDOM(
     truths_filename: truths filename
     is_augmented: if the passed in data is augmented
     """
+    # NOTE: Because of a major refactor, we need these default args for fpt/fsk lookup table names
+    if is_augmented and fpt_lookup_filename == None and fsk_lookup_filename == None:
+        # if this is augmented data, and no fpt/fsk passed in, assume top level basic file names
+        fpt_lookup_filename = "Data/augmented_data/fdom/fpt_lookup.csv"
+        fsk_lookup_filename = "Data/augmented_data/fdom/fsk_lookup.csv"
+
     # get candidates from normal data
     cands_skp = gc.get_cands_fDOM_SKP(
         raw_fdom_data_filename, truths_filename, is_augmented

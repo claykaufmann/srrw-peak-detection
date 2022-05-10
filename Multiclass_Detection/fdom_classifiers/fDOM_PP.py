@@ -1,14 +1,9 @@
 import pandas as pd
 import numpy as np
-import sys
 import copy
-from Multiclass_Detection.get_cands import get_all_cands_fDOM
 import matplotlib.pyplot as plt
 import seaborn as sn
 from sklearn.metrics import confusion_matrix
-
-sys.path.insert(1, "../../")
-from Tools.get_candidates import get_candidates
 from Tools.auxiliary_functions import detect_stage_rises
 import Tools.data_processing as dp
 
