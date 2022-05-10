@@ -1,11 +1,5 @@
-from email.mime import base
-import pandas as pd
-import numpy as np
-import sys
 import copy
-from Multiclass_Detection.get_cands import get_all_cands_fDOM
-
-sys.path.insert(1, "../../")
+from Tools.get_all_cands import get_all_cands_fDOM
 from Tools.get_candidates import get_candidates
 import Tools.data_processing as dp
 
