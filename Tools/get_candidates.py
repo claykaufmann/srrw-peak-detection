@@ -491,7 +491,7 @@ def get_cands_fDOM_NAP(
 
 
 ######## TURBIDITY #########
-def get_cands_turb_PP(turb_filename, truths_filename, is_augmented=False):
+def get_cands_turb_PP(turb_filename, truths_filename, is_augmented=False, delete_dat_range=None):
     """
     Get candidates from turbidity phantom peaks
     """
@@ -512,10 +512,13 @@ def get_cands_turb_PP(turb_filename, truths_filename, is_augmented=False):
 
     turb_peaks, turb_props = get_candidates(turb_data, turb_cand_params)
 
+    if delete_dat_range == None:
+        delete_dat_range = "Data/misc/flat_plat_ranges.txt"
+
     # if not augmented data, we need to delete the missing range
     if not is_augmented:
         turb_peaks, turb_props = dp.delete_missing_data_peaks(
-            turb_data, turb_peaks, turb_props, "../Data/misc/flat_plat_ranges.txt"
+            turb_data, turb_peaks, turb_props, delete_dat_range
         )
 
     turb_cand = [
@@ -674,7 +677,7 @@ def get_cands_turb_FPT(turb_filename, truths_filename, is_augmented=False):
     return cands_df
 
 
-def get_cands_turb_NAP(turb_filename, truths_filename, is_augmented=False):
+def get_cands_turb_NAP(turb_filename, truths_filename, is_augmented=False, delete_date_range=None):
     """
     get all candidates from non anomaly peak data in turb
     """
@@ -695,9 +698,12 @@ def get_cands_turb_NAP(turb_filename, truths_filename, is_augmented=False):
 
     turb_peaks, turb_props = get_candidates(turb_data, turb_cand_params)
 
+    if delete_date_range == None:
+        delete_date_range = "Data/misc/flat_plat_ranges.txt"
+
     if not is_augmented:
         turb_peaks, turb_props = dp.delete_missing_data_peaks(
-            turb_data, turb_peaks, turb_props, "../Data/misc/flat_plat_ranges.txt"
+            turb_data, turb_peaks, turb_props, delete_date_range
         )
 
     turb_cand = [
