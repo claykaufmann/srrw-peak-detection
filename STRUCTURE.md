@@ -1,6 +1,6 @@
 # Repository File Structure
 
-Initially, this project was structured using sibling folders, which Python does not play nicely with. In order to make this easier for those running it in the future, the structure will be redefined using a more Pythonic file structure.
+Initially, this project was structured using sibling folders, which Python does not play nicely with. In order to make this easier for those running it in the future, the structure has been redefined using a more Pythonic file structure. As a result, the top level of the repository is a little messier, but the actual imports within the files work much better.
 
 ## Main Files
 
