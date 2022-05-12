@@ -9,6 +9,9 @@ dependencies:
   - tqdm
   - tensorflow
   - pytorch
-  - pip
   - python=3.10.4
+  - pandas
+  - pip
+  - pip:
+      - torchsummary
 prefix: /opt/homebrew/Caskroom/miniforge/base/envs/srrw
