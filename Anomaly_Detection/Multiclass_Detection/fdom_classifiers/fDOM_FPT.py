@@ -148,7 +148,7 @@ class fDOM_FPT_Classifier:
 
             truth = truths[i][2]
 
-            if pred == "PP":
+            if pred == "FPT":
                 if truth == "NAP":
                     FP += 1
                     results.append(self.predictions[i].append("FP"))
