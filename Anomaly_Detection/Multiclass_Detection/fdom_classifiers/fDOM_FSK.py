@@ -113,7 +113,7 @@ class fDOM_FSK_Classifier:
         """
         self.best_params = copy.deepcopy(self.params)
 
-    def end_of_iterations(self, truths):
+    def end_of_iteration(self, truths):
         """
         test results from past iteration of training
         """

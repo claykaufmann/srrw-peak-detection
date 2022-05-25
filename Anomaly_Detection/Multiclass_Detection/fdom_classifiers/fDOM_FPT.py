@@ -107,7 +107,7 @@ class fDOM_FPT_Classifier:
         self.predictions = results
         return results
 
-    def got_best_result(self):
+    def got_best_results(self):
         """
         classfier got its best result, save the params
         """
