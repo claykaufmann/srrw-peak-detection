@@ -1,8 +1,9 @@
 import copy
-from Tools.get_all_cands import get_all_cands_fDOM
-from Tools.get_candidates import get_candidates
-import Tools.data_processing as dp
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sn
+from sklearn.metrics import confusion_matrix
+import pandas as pd
 
 
 class fDOM_FPT_Classifier:
@@ -88,11 +89,132 @@ class fDOM_FPT_Classifier:
         """
         self.best_params = copy.deepcopy(self.params)
 
-    def preprocess_sample(self):
+    def end_of_iteration(self, truths):
         """
-        preprocess sample as needed
+        test results from past iteration of training
         """
-        pass
+        # check predictions
+        TP, TN, FP, FN, results = self.check_predictions(truths)
+
+        # calculate stats
+        TPR = 0 if TP == FN == 0 else TP / (TP + FN)
+        TNR = TN / (TN + FP)
+        bal_acc = (TPR + TNR) / 2
+        f1_score = 0 if TP == FP == FN == 0 else (2 * TP) / ((2 * TP) + FP + FN)
+
+        if f1_score > self.best_f1_score:
+            self.best_f1_score = f1_score
+
+        acc = bal_acc
+        # see if this is the new best
+        if acc > self.best_acc:
+            # if so, append it
+            self.best_acc = acc
+
+    def check_predictions(self, truths):
+        """
+        check preds for past iteration
+        """
+        TP = TN = FP = FN = 0
+        results = []
+
+        # test classifier
+        for i in range(len(self.predictions)):
+            pred = self.predictions[i][1]
+
+            truth = truths[i][2]
+
+            if pred == "PP":
+                if truth == "NAP":
+                    FP += 1
+                    results.append(self.predictions[i].append("FP"))
+                else:
+                    TP += 1
+                    results.append(self.predictions[i].append("TP"))
+
+            else:
+                if truth == "NAP":
+                    TN += 1
+                    results.append(self.predictions[i].append("TN"))
+                else:
+                    FN += 1
+                    results.append(self.predictions[i].append("FN"))
+
+        # return information
+        return (TP, TN, FP, FN, results)
+
+    def label_test_results(self, preds, truths):
+        """
+        label test results
+        """
+        TP = TN = FP = FN = 0
+        results = []
+
+        for i in range(len(preds)):
+            prediction = preds[i][1]
+            truth = truths[i][2]
+
+            if prediction == "NPP":
+                if truth == "NPP":
+                    TN += 1
+                    results.append(preds[i].append("TN"))
+                else:
+                    FN += 1
+                    results.append(preds[i].append("FN"))
+            else:
+                if truth == "NPP":
+                    FP += 1
+                    results.append(preds[i].append("FP"))
+                else:
+                    TP += 1
+                    results.append(preds[i].append("TP"))
+
+        return (TP, TN, FP, FN, results)
+
+    def display_results(self):
+        """
+        display conf matrix
+        """
+        mean_cfmx = np.zeros((2, 2))
+        for key in self.accumulated_cfmxs.keys():
+            mean_cfmx += self.accumulated_cfmxs[key]
+        mean_cfmx = mean_cfmx / len(self.accumulated_cfmxs)
+
+        print(mean_cfmx)
+
+        plt.figure(figsize=(10, 7))
+        plt.title(label="fDOM Phantom Peak")
+
+        sn.set(font_scale=1.5)
+        sn.heatmap(
+            pd.DataFrame(
+                mean_cfmx.astype("float") / mean_cfmx.sum(axis=1)[:, np.newaxis],
+                index=["Negative", "Positive"],
+                columns=["Negative", "Positive"],
+            ),
+            annot=True,
+            annot_kws={"size": 16},
+        )
+        plt.xlabel("Ground Truths")
+        plt.ylabel("Predictions")
+        plt.show()
+
+        plt.figure(figsize=(10, 7))
+        plt.title(label="fDOM Phantom Peak")
+
+        sn.set(font_scale=1.5)
+        sn.heatmap(
+            pd.DataFrame(
+                mean_cfmx,
+                index=["Negative", "Positive"],
+                columns=["Negative", "Positive"],
+            ),
+            annot=True,
+            annot_kws={"size": 16},
+        )
+        plt.xlabel("Ground Truths")
+        plt.ylabel("Predictions")
+        plt.show()
 
     def generate_params(self):
         """
@@ -108,12 +230,20 @@ class fDOM_FPT_Classifier:
             self.prominence_range[0], self.prominence_range[1]
         )
 
-    # NOTE: this is prob not needed, implement last
-    def check_predictions(self, truths):
+    def classifier_testing(self, split, cands, truths):
         """
-        check preds from just completed iteration
+        perform and of split tests
+        """
+        test_preds = self.classify_samples(cands, use_best_params=True)
 
-        PARAMS:
-        truths: a list of all truths for candidate peaks
-        """
-        pass
+        TP, TN, FP, FN, results = self.label_test_results(test_preds, truths)
+
+        cfmx = confusion_matrix(
+            [row[2] for row in truths],
+            [row[1] for row in test_preds],
+            labels=["NPP", "PP"],
+        )
+
+        self.accumulated_cfmxs[split] = copy.deepcopy(cfmx)
+
+        return (TP, TN, FP, FN, results)
