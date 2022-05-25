@@ -15,7 +15,6 @@ class fDOM_FPT_Classifier:
     def __init__(
         self,
         fdom_data,
-        fpt_lookup_file_path,
         basewidth_range=(1, 10),
         prominence_range=(20, 300),
         prominence_difference_range=(0.01, 2),
@@ -258,6 +257,8 @@ class fDOM_FPT_Classifier:
         params["prom_diff"] = np.random.uniform(
             self.prom_diff_range[0], self.prom_diff_range[1]
         )
+
+        self.params = params
 
     def classifier_testing(self, split, cands, truths):
         """
