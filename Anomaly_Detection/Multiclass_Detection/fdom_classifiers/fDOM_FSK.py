@@ -73,7 +73,7 @@ class fDOM_FSK_Classifier:
             peak_width = int(peak[2] - peak[1])
             basewidth_cond = peak_width >= params["basewidth"]
 
-            # prominence condition
+            # prominence condition MIGHT BE AN ISSUE WITH FLAT SINK!
             prom_cond = peak[3] >= params["prominence"]
 
             # check flatness
