@@ -102,7 +102,7 @@ class fDOM_FPT_Classifier:
             if basewidth_cond and prom_cond and flat_cond and plat_cond:
                 results.append([peak[0], "FPT"])
             else:
-                results.append([peak[0], "NFPT"])
+                results.append([peak[0], "NAP"])
 
         self.predictions = results
         return results

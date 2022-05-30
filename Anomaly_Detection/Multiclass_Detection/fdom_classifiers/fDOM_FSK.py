@@ -2,7 +2,6 @@ import copy
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sn
-from sklearn.manifold import trustworthiness
 from sklearn.metrics import confusion_matrix
 import pandas as pd
 
@@ -102,7 +101,7 @@ class fDOM_FSK_Classifier:
             if basewidth_cond and prom_cond and flat_cond and sink_cond:
                 results.append([peak[0], "FSK"])
             else:
-                results.append([peak[0], "NFSK"])
+                results.append([peak[0], "NAP"])
 
         self.predictions = results
         return results
