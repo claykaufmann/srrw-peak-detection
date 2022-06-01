@@ -235,7 +235,7 @@ def get_cands_fDOM_PLP(fdom_filename, truths_filename, is_augmented=False):
             peak,
             math.floor(props["left_ips"][i]),
             math.ceil(props["right_ips"][i]),
-            props["prominences"][i],
+            props["prominences"][i] * -1,  # multiply by -1 as peak is downward
         ]
         for i, peak in enumerate(peaks)
     ]
@@ -491,7 +491,9 @@ def get_cands_fDOM_NAP(
 
 
 ######## TURBIDITY #########
-def get_cands_turb_PP(turb_filename, truths_filename, is_augmented=False, delete_dat_range=None):
+def get_cands_turb_PP(
+    turb_filename, truths_filename, is_augmented=False, delete_dat_range=None
+):
     """
     Get candidates from turbidity phantom peaks
     """
@@ -677,7 +679,9 @@ def get_cands_turb_FPT(turb_filename, truths_filename, is_augmented=False):
     return cands_df
 
 
-def get_cands_turb_NAP(turb_filename, truths_filename, is_augmented=False, delete_date_range=None):
+def get_cands_turb_NAP(
+    turb_filename, truths_filename, is_augmented=False, delete_date_range=None
+):
     """
     get all candidates from non anomaly peak data in turb
     """
