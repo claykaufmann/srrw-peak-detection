@@ -269,7 +269,6 @@ def get_cands_fDOM_FPT(
     NOTE: these values are HARD CODED CURRENTLY, as I do not have a good way to detect plateaus
     NOTE: idx of peak is just the left base, as it is a flat plateau
     """
-    # TODO: modify this to use augmented file with peak information for FPT
 
     if not is_augmented:
         # load raw original data with hardcoded vals
@@ -294,7 +293,6 @@ def get_cands_fDOM_FSK(
     NOTE: these values are HARD CODED CURRENTLY, as I do not have a good way to detect plateaus
     NOTE: idx of peak is just the left base, as it is a flat sink
     """
-    # TODO: modify this to use augmented file with peak information for FSK
 
     if not is_augmented:
         cands = [[85747, 85747, 86462]]
