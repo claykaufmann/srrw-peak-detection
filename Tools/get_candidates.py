@@ -272,10 +272,10 @@ def get_cands_fDOM_FPT(
 
     if not is_augmented:
         # load raw original data with hardcoded vals
-        cands = [[219005, 219005, 219578], [212951, 212951, 213211]]
+        cands = [[219005, 219005, 219578, 24.5342], [212951, 212951, 213211, 26.54534]]
 
         cands_df = pd.DataFrame(cands)
-        cands_df.columns = ["idx_of_peak", "left_base", "right_base"]
+        cands_df.columns = ["idx_of_peak", "left_base", "right_base", "prominence"]
 
     else:
         # use augmented vals
@@ -295,10 +295,10 @@ def get_cands_fDOM_FSK(
     """
 
     if not is_augmented:
-        cands = [[85747, 85747, 86462]]
+        cands = [[85747, 85747, 86462, 10.54653]]
 
         cands_df = pd.DataFrame(cands)
-        cands_df.columns = ["idx_of_peak", "left_base", "right_base"]
+        cands_df.columns = ["idx_of_peak", "left_base", "right_base", "prominence"]
 
     else:
         cands_df = pd.read_csv(lookup_csv_filename)
