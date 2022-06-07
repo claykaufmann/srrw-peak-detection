@@ -275,7 +275,7 @@ def get_cands_fDOM_FPT(
         cands = [[219005, 219005, 219578, 24.5342], [212951, 212951, 213211, 26.54534]]
 
         cands_df = pd.DataFrame(cands)
-        cands_df.columns = ["idx_of_peak", "left_base", "right_base", "prominence"]
+        cands_df.columns = ["idx_of_peak", "left_base", "right_base", "amplitude"]
 
     else:
         # use augmented vals
@@ -298,7 +298,7 @@ def get_cands_fDOM_FSK(
         cands = [[85747, 85747, 86462, 10.54653]]
 
         cands_df = pd.DataFrame(cands)
-        cands_df.columns = ["idx_of_peak", "left_base", "right_base", "prominence"]
+        cands_df.columns = ["idx_of_peak", "left_base", "right_base", "amplitude"]
 
     else:
         cands_df = pd.read_csv(lookup_csv_filename)
@@ -453,7 +453,7 @@ def get_cands_fDOM_NAP(
     )
 
     cands_nfpt = cands_nfpt.rename(
-        columns={"idx_of_peak": 0, "left_base": 1, "right_base": 2}
+        columns={"idx_of_peak": 0, "left_base": 1, "right_base": 2, "amplitude": 3}
     )
 
     # get cands from NFSK
@@ -462,7 +462,7 @@ def get_cands_fDOM_NAP(
     )
 
     cands_nfsk = cands_nfsk.rename(
-        columns={"idx_of_peak": 0, "left_base": 1, "right_base": 2}
+        columns={"idx_of_peak": 0, "left_base": 1, "right_base": 2, "amplitude": 3}
     )
 
     cands_df = pd.concat([cands_nskp, cands_npp, cands_nplp, cands_nfpt, cands_nfsk])
@@ -602,7 +602,7 @@ def get_cands_turb_SKP(turb_filename, truths_filename, is_augmented=False):
     cands_df = cands_df[cands_df[0].isin(truths["idx_of_peak"])]
 
     # rename cols
-    cands_df.columns = ["idx_of_peak", "left_base", "right_base", "prominence"]
+    cands_df.columns = ["idx_of_peak", "left_base", "right_base", "amplitude"]
 
     return cands_df
 
