@@ -73,11 +73,8 @@ def get_all_cands_fDOM(
 
     all_cands = all_cands.sort_values(by=["idx_of_peak"], kind="stable")
 
-    # TODO: see if this is needed
     all_cands = all_cands.set_index("idx_of_peak")
     all_cands = all_cands[~all_cands.index.duplicated(keep="first")]
-
-    print(all_cands.head())
 
     all_cands = all_cands.reset_index()
 
