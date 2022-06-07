@@ -71,7 +71,6 @@ class fDOM_FPT_Classifier:
             peak_width = int(right_base - left_base)
 
             # prominence condition
-            print(peak[3])
             prom_cond = peak[3] <= params["prominence"] and peak[3] > 0
 
             # check flatness
