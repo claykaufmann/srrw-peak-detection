@@ -114,7 +114,7 @@ class fDOM_FPT_Classifier:
 
             # if prom flat and plat conds, this is a flat plateau
             # FIXME: only works with flat cond rn
-            if flat_cond and prom_cond:
+            if flat_cond and prom_cond and plat_cond:
                 results.append([peak[0], "FPT"])
             else:
                 results.append([peak[0], "NAP"])
