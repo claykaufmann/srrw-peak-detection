@@ -2,7 +2,6 @@ import copy
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sn
-from sklearn.manifold import trustworthiness
 from sklearn.metrics import confusion_matrix
 import pandas as pd
 import math
@@ -16,8 +15,8 @@ class fDOM_FPT_Classifier:
     def __init__(
         self,
         fdom_data,
-        flatness_range=(0.01, 0.25),
-        prominence_range=(10, 100),
+        flatness_range=(0.1, 0.25),
+        prominence_range=(40, 700),
     ) -> None:
         """
         creates the flat plateau classifier
@@ -72,8 +71,8 @@ class fDOM_FPT_Classifier:
             peak_width = int(right_base - left_base)
 
             # prominence condition
-            # TODO: change to no more than threshold
-            prom_cond = peak[3] >= params["prominence"]
+            print(peak[3])
+            prom_cond = peak[3] <= params["prominence"] and peak[3] > 0
 
             # check flatness
             # flatness defined as min/max val less than 20% apart
@@ -84,6 +83,7 @@ class fDOM_FPT_Classifier:
                 curr_amp = self.fdom_data[left_base + index][1]
                 if curr_amp < min_val:
                     min_val = curr_amp
+
                 if curr_amp > max_val:
                     max_val = curr_amp
 
@@ -104,17 +104,18 @@ class fDOM_FPT_Classifier:
             # check plataeau cond
             # see if one past left base and right base is lower than those values
             plat_cond = True
-            if self.fdom_data[left_base - 1][1] >= self.fdom_data[left_base][1]:
+            if self.fdom_data[left_base - 2][1] >= self.fdom_data[left_base][1]:
                 plat_cond = False
-            if self.fdom_data[right_base + 1][1] >= self.fdom_data[right_base][1]:
+            if self.fdom_data[right_base + 2][1] >= self.fdom_data[right_base][1]:
                 plat_cond = False
 
             # print(
             #     f"CONDITIONS: prom: {prom_cond}, flat: {flat_cond}, plat: {plat_cond}"
             # )
 
-            # if basewidth prom flat and plat conds, this is a flat plateau
-            if prom_cond and plat_cond and flat_cond:
+            # if prom flat and plat conds, this is a flat plateau
+            # FIXME: only works with flat cond rn
+            if flat_cond and prom_cond:
                 results.append([peak[0], "FPT"])
             else:
                 results.append([peak[0], "NAP"])
@@ -261,8 +262,8 @@ class fDOM_FPT_Classifier:
         """
         params = {}
 
-        params["flatness"] = np.random.randint(
-            self.flatness_range[0], self.flatness_range[1] + 1
+        params["flatness"] = np.random.uniform(
+            self.flatness_range[0], self.flatness_range[1]
         )
 
         params["prominence"] = np.random.randint(

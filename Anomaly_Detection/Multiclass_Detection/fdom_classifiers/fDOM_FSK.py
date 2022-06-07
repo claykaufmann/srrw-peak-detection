@@ -1,9 +1,11 @@
+from cmath import sin
 import copy
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sn
 from sklearn.metrics import confusion_matrix
 import pandas as pd
+import math
 
 
 class fDOM_FSK_Classifier:
@@ -14,9 +16,8 @@ class fDOM_FSK_Classifier:
     def __init__(
         self,
         fdom_data,
-        basewidth_range=(1, 10),
-        prominence_range=(20, 300),
-        prominence_difference_range=(0.01, 2),
+        flatness_range=(0.1, 0.25),
+        prominence_range=(50, 300),
     ) -> None:
         """
         creates the flat plateau classifier
@@ -29,9 +30,8 @@ class fDOM_FSK_Classifier:
         self.best_acc = 0
         self.best_f1_score = 0
 
-        self.basewidth_range = basewidth_range
         self.prominence_range = prominence_range
-        self.prom_diff_range = prominence_difference_range
+        self.flatness_range = flatness_range
 
         self.fdom_data = fdom_data
 
@@ -66,27 +66,37 @@ class fDOM_FSK_Classifier:
 
         results = []
         for i, peak in enumerate(peaks):
-            # basewidth condition
-            # get the length of the peak, make sure it is within the range of basewidth
-            # peak[2] is right base, peak[1] is left base of peak
-            peak_width = int(peak[2] - peak[1])
-            basewidth_cond = peak_width >= params["basewidth"]
+            left_base = int(peak[1])
+            right_base = int(peak[2])
+            peak_width = int(right_base - left_base)
 
             # prominence condition MIGHT BE AN ISSUE WITH FLAT SINK!
-            prom_cond = peak[3] >= params["prominence"]
+            prom_cond = (
+                peak[3] <= params["prominence"] and peak[3] > 0
+            )  # stop negative vals
 
             # check flatness
-            flat_cond = True
-            left_base = int(peak[1])
-            prev_height = self.fdom_data[left_base][1]
-            # iterate over peak, checking flatness
+            min_val = math.inf
+            max_val = -math.inf
             for index in range(1, peak_width + 1):
-                # compare prev height, make sure it is within a given range
-                current_height = self.fdom_data[left_base + index][1]
-                if abs(current_height - prev_height) > params["prom_diff"]:
-                    flat_cond = False
-                    break
-                prev_height = current_height
+                curr_amp = self.fdom_data[left_base + index][1]
+                if curr_amp < min_val:
+                    min_val = curr_amp
+
+                if curr_amp > max_val:
+                    max_val = curr_amp
+
+            avg_val = (min_val + max_val) / 2
+            low_bound = avg_val * (1 - params["flatness"])
+            high_bound = avg_val * (1 + params["flatness"])
+
+            if (
+                low_bound <= min_val <= high_bound
+                and low_bound <= max_val <= high_bound
+            ):
+                flat_cond = True
+            else:
+                flat_cond = False
 
             # check sink cond
             # see if one past left base and right base is higher than those values
@@ -97,8 +107,9 @@ class fDOM_FSK_Classifier:
             if self.fdom_data[right_base + 1][1] <= self.fdom_data[right_base][1]:
                 sink_cond = False
 
-            # if basewidth prom flat and plat conds, this is a flat plateau
-            if basewidth_cond and prom_cond and flat_cond and sink_cond:
+            # if prom flat and plat conds, this is a flat plateau
+            # FIXME: only works with flat cond rn
+            if flat_cond and prom_cond and sink_cond:
                 results.append([peak[0], "FSK"])
             else:
                 results.append([peak[0], "NAP"])
@@ -245,16 +256,12 @@ class fDOM_FSK_Classifier:
         """
         params = {}
 
-        params["basewidth"] = np.random.randint(
-            self.basewidth_range[0], self.basewidth_range[1] + 1
-        )
-
         params["prominence"] = np.random.randint(
             self.prominence_range[0], self.prominence_range[1]
         )
 
-        params["prom_diff"] = np.random.uniform(
-            self.prom_diff_range[0], self.prom_diff_range[1]
+        params["flatness"] = np.random.uniform(
+            self.flatness_range[0], self.flatness_range[1]
         )
 
         self.params = params
