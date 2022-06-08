@@ -71,9 +71,7 @@ class fDOM_FSK_Classifier:
             peak_width = int(right_base - left_base)
 
             # prominence condition MIGHT BE AN ISSUE WITH FLAT SINK!
-            prom_cond = (
-                peak[3] <= params["prominence"] and peak[3] > 0
-            )  # stop negative vals
+            prom_cond = peak[3] <= params["prominence"] and peak[3] > 0
 
             # check flatness
             min_val = math.inf
@@ -101,15 +99,13 @@ class fDOM_FSK_Classifier:
             # check sink cond
             # see if one past left base and right base is higher than those values
             sink_cond = True
-            right_base = int(peak[2])
-            if self.fdom_data[left_base - 1][1] <= self.fdom_data[left_base][1]:
+            if self.fdom_data[left_base - 2][1] <= self.fdom_data[left_base][1]:
                 sink_cond = False
-            if self.fdom_data[right_base + 1][1] <= self.fdom_data[right_base][1]:
+            if self.fdom_data[right_base + 2][1] <= self.fdom_data[right_base][1]:
                 sink_cond = False
 
             # if prom flat and plat conds, this is a flat plateau
-            # FIXME: only works with flat cond rn
-            if flat_cond and prom_cond and sink_cond:
+            if flat_cond and prom_cond:
                 results.append([peak[0], "FSK"])
             else:
                 results.append([peak[0], "NAP"])
@@ -177,7 +173,7 @@ class fDOM_FSK_Classifier:
         # return information
         return (TP, TN, FP, FN, results)
 
-    def label_test_resulrs(self, preds, truths):
+    def label_test_results(self, preds, truths):
         """
         label test results
         """
