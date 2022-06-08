@@ -144,10 +144,21 @@ def widen_augment(df, peak_idx) -> pd.DataFrame:
 
     returns: The augmented dataframe
     """
-    mu, sigma = 0.001, 0.1
-    noise = np.random.normal(mu, sigma, df.shape[0])
+    # decide if positive or negative
+    random.seed()
+    pos_or_neg = random.randint(0, 1)
 
-    df.loc[:, "value"] = df.loc[:, "value"] + noise
+    # if positive, add to peak vals
+    if pos_or_neg == 1:
+        mu, sigma = 0.001, 0.15
+        noise = np.random.uniform(mu, sigma, df.shape[0])
+        df.loc[:, "value"] = df.loc[:, "value"] + noise
+
+    # else, subtract from peak vals
+    else:
+        mu, sigma = -0.15, -0.001
+        noise = np.random.uniform(mu, sigma, df.shape[0])
+        df.loc[:, "value"] = df.loc[:, "value"] + noise
 
     return df
 
@@ -166,6 +177,7 @@ def heighten_augment(
 
     returns: the augmented dataframe
     """
+    random.seed()
     # gen a random number to multiply amplitude by
     random_val = random.uniform(
         lower_bound_multiplier,

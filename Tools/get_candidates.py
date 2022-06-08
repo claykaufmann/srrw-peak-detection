@@ -235,7 +235,7 @@ def get_cands_fDOM_PLP(fdom_filename, truths_filename, is_augmented=False):
             peak,
             math.floor(props["left_ips"][i]),
             math.ceil(props["right_ips"][i]),
-            props["prominences"][i],
+            props["prominences"][i] * -1,  # multiply by -1 as peak is downward
         ]
         for i, peak in enumerate(peaks)
     ]
@@ -269,14 +269,13 @@ def get_cands_fDOM_FPT(
     NOTE: these values are HARD CODED CURRENTLY, as I do not have a good way to detect plateaus
     NOTE: idx of peak is just the left base, as it is a flat plateau
     """
-    # TODO: modify this to use augmented file with peak information for FPT
 
     if not is_augmented:
         # load raw original data with hardcoded vals
-        cands = [[219005, 219005, 219578], [212951, 212951, 213211]]
+        cands = [[219005, 219005, 219578, 24.5342], [212951, 212951, 213211, 26.54534]]
 
         cands_df = pd.DataFrame(cands)
-        cands_df.columns = ["idx_of_peak", "left_base", "right_base"]
+        cands_df.columns = ["idx_of_peak", "left_base", "right_base", "amplitude"]
 
     else:
         # use augmented vals
@@ -294,13 +293,12 @@ def get_cands_fDOM_FSK(
     NOTE: these values are HARD CODED CURRENTLY, as I do not have a good way to detect plateaus
     NOTE: idx of peak is just the left base, as it is a flat sink
     """
-    # TODO: modify this to use augmented file with peak information for FSK
 
     if not is_augmented:
-        cands = [[85747, 85747, 86462]]
+        cands = [[85747, 85747, 86462, 10.54653]]
 
         cands_df = pd.DataFrame(cands)
-        cands_df.columns = ["idx_of_peak", "left_base", "right_base"]
+        cands_df.columns = ["idx_of_peak", "left_base", "right_base", "amplitude"]
 
     else:
         cands_df = pd.read_csv(lookup_csv_filename)
@@ -455,7 +453,7 @@ def get_cands_fDOM_NAP(
     )
 
     cands_nfpt = cands_nfpt.rename(
-        columns={"idx_of_peak": 0, "left_base": 1, "right_base": 2}
+        columns={"idx_of_peak": 0, "left_base": 1, "right_base": 2, "amplitude": 3}
     )
 
     # get cands from NFSK
@@ -464,7 +462,7 @@ def get_cands_fDOM_NAP(
     )
 
     cands_nfsk = cands_nfsk.rename(
-        columns={"idx_of_peak": 0, "left_base": 1, "right_base": 2}
+        columns={"idx_of_peak": 0, "left_base": 1, "right_base": 2, "amplitude": 3}
     )
 
     cands_df = pd.concat([cands_nskp, cands_npp, cands_nplp, cands_nfpt, cands_nfsk])
@@ -491,7 +489,9 @@ def get_cands_fDOM_NAP(
 
 
 ######## TURBIDITY #########
-def get_cands_turb_PP(turb_filename, truths_filename, is_augmented=False, delete_dat_range=None):
+def get_cands_turb_PP(
+    turb_filename, truths_filename, is_augmented=False, delete_dat_range=None
+):
     """
     Get candidates from turbidity phantom peaks
     """
@@ -602,7 +602,7 @@ def get_cands_turb_SKP(turb_filename, truths_filename, is_augmented=False):
     cands_df = cands_df[cands_df[0].isin(truths["idx_of_peak"])]
 
     # rename cols
-    cands_df.columns = ["idx_of_peak", "left_base", "right_base", "prominence"]
+    cands_df.columns = ["idx_of_peak", "left_base", "right_base", "amplitude"]
 
     return cands_df
 
@@ -677,7 +677,9 @@ def get_cands_turb_FPT(turb_filename, truths_filename, is_augmented=False):
     return cands_df
 
 
-def get_cands_turb_NAP(turb_filename, truths_filename, is_augmented=False, delete_date_range=None):
+def get_cands_turb_NAP(
+    turb_filename, truths_filename, is_augmented=False, delete_date_range=None
+):
     """
     get all candidates from non anomaly peak data in turb
     """

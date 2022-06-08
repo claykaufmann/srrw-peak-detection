@@ -106,7 +106,8 @@ class fDOM_PLP_Classifier:
 
         results = []
         for i, peak in enumerate(peaks):
-            prominence_condition = peak[3] >= params["min_prominence"]
+            # NOTE: this is abs, as PLP candidate peaks have a negative prominence
+            prominence_condition = abs(peak[3]) >= params["min_prominence"]
 
             basewidth_condition = abs(peak[1] - peak[2]) <= params["max_basewidth"]
 
@@ -122,15 +123,14 @@ class fDOM_PLP_Classifier:
             )
 
             # ensure that the peak has a negative ampltiude, as all PLP peaks do
-            # TODO: is this allowed?
-            # downward_cond = peak[3] < 0
+            downward_cond = peak[3] < 0
 
             if (
                 prominence_condition
                 and basewidth_condition
                 and interference_condition
                 and proximity_condition
-                # and downward_cond
+                and downward_cond
             ):
                 results.append([peak[0], "PLP"])
             else:
