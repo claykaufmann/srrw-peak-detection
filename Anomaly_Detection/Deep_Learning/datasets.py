@@ -186,11 +186,12 @@ class fdomDataset(data.Dataset):
 
             # use these indices to collect the data for stage and turb
             # each sample follows this order: 0 = fdom, 1 = stage, 2 = turb, 3 = time
+            # TODO: experiment with removing time
             sample = [
                 fdom_raw[peak_idx - left : peak_idx + right + 1].tolist(),
                 stage_raw[peak_idx - left : peak_idx + right + 1].tolist(),
                 turb_raw[peak_idx - left : peak_idx + right + 1].tolist(),
-                time[peak_idx - left : peak_idx + right + 1].tolist(),
+                # time[peak_idx - left : peak_idx + right + 1].tolist(),
             ]
 
             # sometimes the sample doesn't actually include any data, ensure it has the correct size
