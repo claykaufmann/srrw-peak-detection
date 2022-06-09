@@ -182,34 +182,6 @@ class fDOM_FPT_Classifier:
         # return information
         return (TP, TN, FP, FN, results)
 
-    def label_test_results(self, preds, truths):
-        """
-        label test results
-        """
-        TP = TN = FP = FN = 0
-        results = []
-
-        for i in range(len(preds)):
-            prediction = preds[i][1]
-            truth = truths[i][2]
-
-            if prediction == "NPP":
-                if truth == "NPP":
-                    TN += 1
-                    results.append(preds[i].append("TN"))
-                else:
-                    FN += 1
-                    results.append(preds[i].append("FN"))
-            else:
-                if truth == "NPP":
-                    FP += 1
-                    results.append(preds[i].append("FP"))
-                else:
-                    TP += 1
-                    results.append(preds[i].append("TP"))
-
-        return (TP, TN, FP, FN, results)
-
     def display_results(self):
         """
         display conf matrix
@@ -222,7 +194,7 @@ class fDOM_FPT_Classifier:
         print(mean_cfmx)
 
         plt.figure(figsize=(10, 7))
-        plt.title(label="fDOM Phantom Peak")
+        plt.title(label="fDOM Flat Plateau")
 
         sn.set(font_scale=1.5)
         sn.heatmap(
@@ -239,7 +211,7 @@ class fDOM_FPT_Classifier:
         plt.show()
 
         plt.figure(figsize=(10, 7))
-        plt.title(label="fDOM Phantom Peak")
+        plt.title(label="fDOM Flat Plateau")
 
         sn.set(font_scale=1.5)
         sn.heatmap(
@@ -270,21 +242,3 @@ class fDOM_FPT_Classifier:
         )
 
         self.params = params
-
-    def classifier_testing(self, split, cands, truths):
-        """
-        perform and of split tests
-        """
-        test_preds = self.classify_samples(cands, use_best_params=True)
-
-        TP, TN, FP, FN, results = self.label_test_results(test_preds, truths)
-
-        cfmx = confusion_matrix(
-            [row[2] for row in truths],
-            [row[1] for row in test_preds],
-            labels=["NPP", "PP"],
-        )
-
-        self.accumulated_cfmxs[split] = copy.deepcopy(cfmx)
-
-        return (TP, TN, FP, FN, results)
