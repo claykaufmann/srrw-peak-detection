@@ -658,7 +658,6 @@ def get_cands_turb_FPT(
     cands = [[]]
 
     # need to get the actual prominence value
-    # TODO: ensure the amplitude section is working as intended
     for i in range(len(start_indices)):
         cands.append(
             [
