@@ -98,7 +98,7 @@ def get_all_truths_fDOM(filename, is_augmented=False) -> pd.DataFrame:
 
 # ~~~~~~~ TURBIDITY ~~~~~~~
 def get_all_cands_turb(
-    raw_filename, truths_filename, is_augmented=False
+    raw_filename, truths_filename, is_augmented=False, fpt_lookup_path=None
 ) -> pd.DataFrame:
     """
     get all turb cands
@@ -109,18 +109,21 @@ def get_all_cands_turb(
     is_augmented: is the data augmented or not
     """
 
+    if is_augmented and fpt_lookup_path == None:
+        # if this is augmented data, and no fpt/fsk passed in, assume top level basic file names
+        fpt_lookup_path = "Data/augmented_data/turb/fpt_lookup.csv"
+
     cands_skp = gc.get_cands_turb_SKP(raw_filename, truths_filename, is_augmented)
 
     cands_pp = gc.get_cands_turb_PP(raw_filename, truths_filename, is_augmented)
 
     cands_NAP = gc.get_cands_turb_NAP(raw_filename, truths_filename, is_augmented)
 
-    if not is_augmented:
-        cands_fpt = gc.get_cands_turb_FPT(raw_filename, truths_filename, is_augmented)
+    cands_fpt = gc.get_cands_turb_FPT(
+        raw_filename, truths_filename, is_augmented, fpt_lookup_path
+    )
 
-        all_cands = pd.concat([cands_skp, cands_pp, cands_NAP, cands_fpt])
-    else:
-        all_cands = pd.concat([cands_skp, cands_pp, cands_NAP])
+    all_cands = pd.concat([cands_skp, cands_pp, cands_NAP, cands_fpt])
 
     all_cands = all_cands.sort_values(by=["idx_of_peak"], kind="stable")
 
