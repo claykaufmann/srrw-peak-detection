@@ -114,10 +114,12 @@ class turb_PP_Classifier:
 
         return self.params
 
-    def check_for_fDOM_interference(fdom_data, peak_idx, intf_params):
+    def check_for_fDOM_interference(self, fdom_data, peak_idx, intf_params):
         """
         given index of turb peak, check fDOM for interference
         """
+        peak_idx = int(peak_idx)
+
         # Calculate mean tangent line across range_1
         mean_tan_1 = np.mean(
             np.diff(
@@ -223,8 +225,8 @@ class turb_PP_Classifier:
         bal_acc = (TPR + TNR) / 2
         f1_score = 0 if TP == FP == FN == 0 else (2 * TP) / ((2 * TP) + FP + FN)
 
-        if f1_score > self.best_f1_score:
-            self.best_f1_score = f1_score
+        if f1_score > self.best_f1:
+            self.best_f1 = f1_score
 
         acc = bal_acc
         # see if this is the new best
@@ -283,26 +285,26 @@ class turb_PP_Classifier:
         results = []
 
         # test classifier
-        for i in range(len(self.predictions)):
-            pred = self.predictions[i][1]
+        for i in range(len(self.preds)):
+            pred = self.preds[i][1]
 
             truth = truths[i][2]
 
             if pred == "PP":
                 if truth == "NAP":
                     FP += 1
-                    results.append(self.predictions[i].append("FP"))
+                    results.append(self.preds[i].append("FP"))
                 else:
                     TP += 1
-                    results.append(self.predictions[i].append("TP"))
+                    results.append(self.preds[i].append("TP"))
 
             else:
                 if truth == "NAP":
                     TN += 1
-                    results.append(self.predictions[i].append("TN"))
+                    results.append(self.preds[i].append("TN"))
                 else:
                     FN += 1
-                    results.append(self.predictions[i].append("FN"))
+                    results.append(self.preds[i].append("FN"))
 
         # return information
         return (TP, TN, FP, FN, results)
@@ -351,19 +353,3 @@ class turb_PP_Classifier:
         plt.xlabel("Ground Truths")
         plt.ylabel("Predictions")
         plt.show()
-
-    def generate_params(self):
-        """
-        generate new params randomly, using random grid search
-        """
-        params = {}
-
-        params["flatness"] = np.random.uniform(
-            self.flatness_range[0], self.flatness_range[1]
-        )
-
-        params["prominence"] = np.random.randint(
-            self.prominence_range[0], self.prominence_range[1]
-        )
-
-        self.params = params
