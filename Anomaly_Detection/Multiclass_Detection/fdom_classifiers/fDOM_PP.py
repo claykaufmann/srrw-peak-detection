@@ -91,7 +91,8 @@ class fDOM_PP_Classifier:
             params = self.params
 
         # preprocess the sample
-        peak = self.preprocess_samples(peaks)
+        # FIXME: the assigned variable was "peak", not "peaks", changed 6/9/22, could be totally diff result
+        peaks = self.preprocess_samples(peaks)
 
         results = []
         for i, peak in enumerate(peaks):
@@ -280,62 +281,6 @@ class fDOM_PP_Classifier:
         # save this information for use later
         self.s_index = s_indexed
 
-    def test_results(self, peaks):
-        """
-        used to test the classifier on test data
-        """
-
-        params = self.best_params
-        results = []
-        for i, peak in enumerate(peaks):
-            peak = self.preprocess_sample(peak)
-
-            # Peak is not near stage rise
-            stage_rise_condition = not (peak[4] != -1 and peak[4] <= params["x"]) or (
-                peak[4] != -1 and peak[5] <= params["y"]
-            )
-            # Peak is not in fall
-            fall_range_condition = peak[6] == "NFL"
-            # Peak has a large enough prominence/basewidth ratio
-            pbwr = peak[5] / abs(peak[1] - peak[2])
-            pbwr_condition = pbwr > params["ratio_threshold"]
-
-            if stage_rise_condition and fall_range_condition and pbwr_condition:
-                results.append([peak[0], "PP"])
-            else:
-                results.append([peak[0], "NPP"])
-
-        self.predictions = results
-        return results
-
-    def label_test_results(self, preds, truths):
-        """
-        label test results
-        """
-        TP = TN = FP = FN = 0
-        results = []
-
-        for i in range(len(preds)):
-            prediction = preds[i][1]
-            truth = truths[i][2]
-
-            if prediction == "NPP":
-                if truth == "NPP":
-                    TN += 1
-                    results.append(preds[i].append("TN"))
-                else:
-                    FN += 1
-                    results.append(preds[i].append("FN"))
-            else:
-                if truth == "NPP":
-                    FP += 1
-                    results.append(preds[i].append("FP"))
-                else:
-                    TP += 1
-                    results.append(preds[i].append("TP"))
-
-        return (TP, TN, FP, FN, results)
-
     def display_results(self):
         """
         display test results in a heatmap
@@ -381,21 +326,3 @@ class fDOM_PP_Classifier:
         plt.xlabel("Ground Truths")
         plt.ylabel("Predictions")
         plt.show()
-
-    def classifier_testing(self, split, cands, truths):
-        """
-        perform end of split tests, display results
-        """
-        test_preds = self.test_results(cands)
-
-        TP, TN, FP, FN, results = self.label_test_results(test_preds, truths)
-
-        cfmx = confusion_matrix(
-            [row[2] for row in truths],
-            [row[1] for row in test_preds],
-            labels=["NPP", "PP"],
-        )
-
-        self.accumulated_cfmxs[split] = copy.deepcopy(cfmx)
-
-        return (TP, TN, FP, FN, results)
