@@ -128,25 +128,25 @@ class fDOM_PP_Classifier:
 
         for peak in peaks:
             # don't add a bunch of extra information if peak previously processed
-            # if "NFL" not in peak or "FL" not in peak:
-            peak.append(self.s_index[int(peak[0]), 0])
-            peak.append(self.s_index[int(peak[0]), 1])
+            if len(peak) < 4:
+                peak.append(self.s_index[int(peak[0]), 0])
+                peak.append(self.s_index[int(peak[0]), 1])
 
-            # check if sample is augmented (we can use the timestamp trick)
-            # use fdom data to get the actual timestamp
-            cand_timestamp = self.fdom_data[int(peak[0]), 0]
-            if cand_timestamp > self.augment_begin:
-                # the peak is augmented, append not fall, as we can't make month assumptions
-                peak.append("NFL")
-
-            else:
-                # else, this is from real data, check what month it is coming from
-                dt = dp.julian_to_datetime(cand_timestamp)
-
-                if (dt.month == 10) or (dt.month == 9 and dt.day >= 20):
-                    peak.append("FL")
-                else:
+                # check if sample is augmented (we can use the timestamp trick)
+                # use fdom data to get the actual timestamp
+                cand_timestamp = self.fdom_data[int(peak[0]), 0]
+                if cand_timestamp > self.augment_begin:
+                    # the peak is augmented, append not fall, as we can't make month assumptions
                     peak.append("NFL")
+
+                else:
+                    # else, this is from real data, check what month it is coming from
+                    dt = dp.julian_to_datetime(cand_timestamp)
+
+                    if (dt.month == 10) or (dt.month == 9 and dt.day >= 20):
+                        peak.append("FL")
+                    else:
+                        peak.append("NFL")
 
         return peaks
 
