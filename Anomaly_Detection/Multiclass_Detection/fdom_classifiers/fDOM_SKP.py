@@ -21,7 +21,7 @@ class fDOM_SKP_Classifier:
         fdom_truth_filename,
         fdom_augmented_filename=None,
         fdom_augmented_truth_filename=None,
-        basewidth_range=(1, 10),
+        basewidth_range=(1, 5),
         prominence_range=(5, 20),
         peak_prox_bounds=(0, 20),
         downward_bases_range=(0, 5),
