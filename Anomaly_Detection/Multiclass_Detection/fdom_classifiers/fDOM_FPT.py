@@ -103,17 +103,16 @@ class fDOM_FPT_Classifier:
             # check plataeau cond
             # see if one past left base and right base is lower than those values
             plat_cond = True
-            if self.fdom_data[left_base - 2][1] >= self.fdom_data[left_base][1]:
+            try:
+                if self.fdom_data[left_base - 2][1] >= self.fdom_data[left_base][1]:
+                    plat_cond = False
+                if self.fdom_data[right_base + 2][1] >= self.fdom_data[right_base][1]:
+                    plat_cond = False
+            except:
+                # errors out, its not a flat plateau, as the sequence has ended
                 plat_cond = False
-            if self.fdom_data[right_base + 2][1] >= self.fdom_data[right_base][1]:
-                plat_cond = False
-
-            # print(
-            #     f"CONDITIONS: prom: {prom_cond}, flat: {flat_cond}, plat: {plat_cond}"
-            # )
 
             # if prom flat and plat conds, this is a flat plateau
-            # FIXME: only works with flat cond rn
             if flat_cond and prom_cond and plat_cond:
                 results.append([peak[0], "FPT"])
             else:
