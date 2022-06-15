@@ -111,7 +111,7 @@ class fDOM_FSK_Classifier:
             # print(f"Prom: {prom_cond}, flat: {flat_cond}, sink: {sink_cond}")
 
             # if prom flat and plat conds, this is a flat plateau
-            # FIXME: flat cond could be fucking things up here
+            # FIXME: flat cond could be messing things up here
             if prom_cond and sink_cond:
                 results.append([peak[0], "FSK"])
             else:
