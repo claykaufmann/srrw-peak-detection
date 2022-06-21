@@ -186,12 +186,10 @@ class fdomDataset(data.Dataset):
 
             # use these indices to collect the data for stage and turb
             # each sample follows this order: 0 = fdom, 1 = stage, 2 = turb, 3 = time
-            # TODO: experiment with removing time
             sample = [
                 fdom_raw[peak_idx - left : peak_idx + right + 1].tolist(),
                 stage_raw[peak_idx - left : peak_idx + right + 1].tolist(),
                 turb_raw[peak_idx - left : peak_idx + right + 1].tolist(),
-                # time[peak_idx - left : peak_idx + right + 1].tolist(),
             ]
 
             # sometimes the sample doesn't actually include any data, ensure it has the correct size
@@ -350,14 +348,12 @@ class fdomAugOnlyDataset(data.Dataset):
             right = abs(peak_idx - right_base)
 
             # use these indices to collect the data for stage and turb
-            # each sample follows this order: 0 = fdom, 1 = stage, 2 = turb, 3 = time
-            # need to modify how we are combining these, because it does not seem to be outputting the correct shape
-            # shape should be [*, 4] (where * is variable length), instead it is [3, *, 2] for some reason
+            # each sample follows this order: 0 = fdom, 1 = stage, 2 = turb
             sample = [
                 fdom_raw[peak_idx - left : peak_idx + right + 1].tolist(),
                 stage_raw[peak_idx - left : peak_idx + right + 1].tolist(),
                 turb_raw[peak_idx - left : peak_idx + right + 1].tolist(),
-                time[peak_idx - left : peak_idx + right + 1].tolist(),
+                # time[peak_idx - left : peak_idx + right + 1].tolist(),
             ]
 
             # if a sample is zero length, dont add it
@@ -538,11 +534,12 @@ class turbidityDataset(data.Dataset):
             right = abs(peak_idx - right_base)
 
             # each sample follows this order: 0 = fdom, 1 = stage, 2 = turb, 3 = time
+            # FIXME: experimented with swapped turb and fdom for turb dataset....
             sample = [
-                fdom_raw[peak_idx - left : peak_idx + right + 1].tolist(),
-                stage_raw[peak_idx - left : peak_idx + right + 1].tolist(),
                 turb_raw[peak_idx - left : peak_idx + right + 1].tolist(),
-                time[peak_idx - left : peak_idx + right + 1].tolist(),
+                stage_raw[peak_idx - left : peak_idx + right + 1].tolist(),
+                fdom_raw[peak_idx - left : peak_idx + right + 1].tolist(),
+                # time[peak_idx - left : peak_idx + right + 1].tolist(),
             ]
 
             if len(sample[0]) > 0:
@@ -663,10 +660,10 @@ class turbAugOnlyDataset(data.Dataset):
 
             # each sample follows this order: 0 = fdom, 1 = stage, 2 = turb, 3 = time
             sample = [
-                fdom_raw[peak_idx - left : peak_idx + right + 1].tolist(),
-                stage_raw[peak_idx - left : peak_idx + right + 1].tolist(),
                 turb_raw[peak_idx - left : peak_idx + right + 1].tolist(),
-                time[peak_idx - left : peak_idx + right + 1].tolist(),
+                stage_raw[peak_idx - left : peak_idx + right + 1].tolist(),
+                fdom_raw[peak_idx - left : peak_idx + right + 1].tolist(),
+                # time[peak_idx - left : peak_idx + right + 1].tolist(),
             ]
 
             if len(sample) >= 4 and len(sample[0]) > 0:
