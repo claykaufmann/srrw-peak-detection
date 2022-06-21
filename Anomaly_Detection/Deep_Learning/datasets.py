@@ -666,7 +666,7 @@ class turbAugOnlyDataset(data.Dataset):
                 # time[peak_idx - left : peak_idx + right + 1].tolist(),
             ]
 
-            if len(sample) >= 4 and len(sample[0]) > 0:
+            if len(sample) >= 3 and len(sample[0]) > 0:
                 X.append(sample)
 
                 # get label
@@ -680,7 +680,7 @@ class turbAugOnlyDataset(data.Dataset):
 
             else:
                 print("WARNING: shape of a sample is incorrect, not adding it")
-                print(f"Error shape is: {sample.shape}")
+                print(f"Error shape is: {len(sample)}")
                 print(f"Error vals: {turb_raw[peak_idx - left : peak_idx + right + 1]}")
 
         assert len(X) == len(Y)
