@@ -16,8 +16,8 @@ class fDOM_FSK_Classifier:
     def __init__(
         self,
         fdom_data,
-        flatness_range=(0.1, 0.25),
-        prominence_range=(50, 300),
+        flatness_range=(0.1, 5),
+        prominence_range=(1, 50),
     ) -> None:
         """
         creates the flat plateau classifier
@@ -70,8 +70,13 @@ class fDOM_FSK_Classifier:
             right_base = int(peak[2])
             peak_width = int(right_base - left_base)
 
-            # prominence condition MIGHT BE AN ISSUE WITH FLAT SINK!
-            prom_cond = peak[3] <= params["prominence"] and peak[3] > 0
+            # prominence condition
+            # prom_cond = peak[3] <= params["prominence"] and peak[3] > 0
+
+            prom_cond = (
+                abs(peak[3] - self.fdom_data[left_base][1]) > params["prominence"]
+                and peak[3] > 0  # remove PLP preds
+            )
 
             # check flatness
             min_val = math.inf
@@ -96,16 +101,21 @@ class fDOM_FSK_Classifier:
             else:
                 flat_cond = False
 
-            # check sink cond
-            # see if one past left base and right base is higher than those values
+            # # check sink cond
             sink_cond = True
-            if self.fdom_data[left_base - 2][1] <= self.fdom_data[left_base][1]:
-                sink_cond = False
-            if self.fdom_data[right_base + 2][1] <= self.fdom_data[right_base][1]:
+            # NOTE: IN FSK CANDS, the left and right ends are above the flat sink, which means we do not need to go before the left base in this case
+            try:
+                if self.fdom_data[left_base][1] <= self.fdom_data[left_base + 10][1]:
+                    sink_cond = False
+                if self.fdom_data[right_base][1] <= self.fdom_data[right_base - 10][1]:
+                    sink_cond = False
+            except:
+                # if we get an index error, assume false
                 sink_cond = False
 
             # if prom flat and plat conds, this is a flat plateau
-            if flat_cond and prom_cond:
+            # FIXME: flat cond could be messing things up here
+            if prom_cond and flat_cond and sink_cond:
                 results.append([peak[0], "FSK"])
             else:
                 results.append([peak[0], "NAP"])

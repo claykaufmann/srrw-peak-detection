@@ -2,9 +2,6 @@
 This module contains helper functions for data augmentation
 """
 import math
-import sys
-
-# so we can import tools module
 import Tools.data_processing as dp
 from datetime import timedelta
 import pandas as pd
@@ -79,6 +76,7 @@ def get_ends_of_peak(cands_df: pd.DataFrame, peak_index) -> tuple():
     """
     # use cands_df to return left and right base of peak index
     new_cands = copy.deepcopy(cands_df)
+
     new_cands = new_cands.loc[new_cands["idx_of_peak"] == peak_index]
 
     left_base = new_cands["left_base"]
@@ -146,6 +144,7 @@ def widen_augment(df, peak_idx) -> pd.DataFrame:
     """
     # decide if positive or negative
     random.seed()
+    np.random.seed()
     pos_or_neg = random.randint(0, 1)
 
     # if positive, add to peak vals
@@ -178,8 +177,9 @@ def heighten_augment(
     returns: the augmented dataframe
     """
     random.seed()
+    np.random.seed()
     # gen a random number to multiply amplitude by
-    random_val = random.uniform(
+    random_val = np.random.uniform(
         lower_bound_multiplier,
         upper_bound_multiplier,
     )
