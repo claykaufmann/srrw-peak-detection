@@ -607,7 +607,9 @@ def get_cands_turb_SKP(turb_filename, truths_filename, is_augmented=False):
     return cands_df
 
 
-def get_cands_turb_FPT(turb_filename, truths_filename, is_augmented=False):
+def get_cands_turb_FPT(
+    turb_filename, truths_filename, is_augmented=False, fpt_lookup_path=None
+):
     """
     get cands from turbidity flat plateaus
     """
@@ -654,8 +656,17 @@ def get_cands_turb_FPT(turb_filename, truths_filename, is_augmented=False):
     del end_indices[0]
 
     cands = [[]]
+
+    # need to get the actual prominence value
     for i in range(len(start_indices)):
-        cands.append([start_indices[i], start_indices[i], end_indices[i]])
+        cands.append(
+            [
+                start_indices[i],
+                start_indices[i],
+                end_indices[i],
+                turb_data[start_indices[i]][1],
+            ]
+        )
 
     # create dataframe
     cands_df = pd.DataFrame(cands)
@@ -672,7 +683,7 @@ def get_cands_turb_FPT(turb_filename, truths_filename, is_augmented=False):
     cands_df = cands_df[cands_df[0].isin(truths["idx_of_peak"])]
 
     # rename cols
-    cands_df.columns = ["idx_of_peak", "left_base", "right_base"]
+    cands_df.columns = ["idx_of_peak", "left_base", "right_base", "amplitude"]
 
     return cands_df
 
