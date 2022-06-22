@@ -87,7 +87,7 @@ class turb_FPT_Classifier:
             min_val = math.inf
             max_val = -math.inf
             for index in range(1, peak_width + 1):
-                curr_amp = self.fdom_data[left_base + index][1]
+                curr_amp = self.turb_data[left_base + index][1]
                 if curr_amp < min_val:
                     min_val = curr_amp
 
@@ -111,21 +111,24 @@ class turb_FPT_Classifier:
             # check plataeau cond
             # see if one past left base and right base is lower than those values
             plat_cond = True
-            if self.turb_data[left_base - 2][1] >= self.turb_data[left_base][1]:
-                plat_cond = False
-            if self.turb_data[right_base + 2][1] >= self.turb_data[right_base][1]:
-                plat_cond = False
 
-            # print(
-            #     f"CONDITIONS: prom: {prom_cond}, flat: {flat_cond}, plat: {plat_cond}"
-            # )
+            # need this try/except in case we get an out of bounds error
+            try:
+                if self.turb_data[left_base - 2][1] >= self.turb_data[left_base][1]:
+                    plat_cond = False
+                if self.turb_data[right_base + 2][1] >= self.turb_data[right_base][1]:
+                    plat_cond = False
+            except:
+                plat_cond = False
 
             # if prom flat and plat conds, this is a flat plateau
-            # FIXME: only works with flat cond rn
             if flat_cond and prom_cond and plat_cond:
                 results.append([peak[0], "FPT"])
             else:
                 results.append([peak[0], "NAP"])
+
+        self.predictions = results
+        return results
 
     def got_best_results(self):
         """
