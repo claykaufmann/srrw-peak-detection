@@ -22,8 +22,8 @@ class fDOM_SKP_Classifier:
         fdom_augmented_filename=None,
         fdom_augmented_truth_filename=None,
         basewidth_range=(1, 8),
-        prominence_range=(5, 10),
-        peak_prox_bounds=(0, 10),
+        prominence_range=(5, 15),
+        peak_prox_bounds=(0, 15),
         downward_bases_range=(1, 5),
     ) -> None:
         """
