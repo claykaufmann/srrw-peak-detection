@@ -94,7 +94,7 @@ def get_ends_of_peak(cands_df: pd.DataFrame, peak_index) -> tuple():
 
 # might actually work if correct indices are just passed in...
 def build_temp_dataframes(
-    fdom, stage, turb, prev, next, fdom_idx, stage_idx, turb_idx
+    fdom, stage, turb, prev, next, fdom_idx, stage_idx, turb_idx, peak_label
 ) -> tuple():
     """
     build the temporary dataframes for the peak segment
@@ -128,6 +128,9 @@ def build_temp_dataframes(
     new_fdom = copy.deepcopy(fDOM_raw_time_range)
     new_stage = copy.deepcopy(stage_time_range)
     new_turb_raw = copy.deepcopy(turb_time_range)
+
+    # add peak label for trainset plotting
+    new_fdom["label"] = peak_label
 
     return new_fdom, new_stage, new_turb_raw
 
@@ -523,13 +526,14 @@ def write_to_trainset_csv(
     fdom_stage_trainset_raw = convert_df_julian_to_datetime(fdom_stage_trainset_raw)
 
     # add in new values
+    # fdom does not need a label field, as it already exists
     fdom_trainset_raw["series"] = "fDOM"
-    fdom_trainset_raw["label"] = ""
 
     fdom_turb_trainset_raw["series"] = "turb"
     fdom_turb_trainset_raw["label"] = ""
 
     fdom_stage_trainset_raw["series"] = "stage"
+    # TODO add stage rise labels in here...
     fdom_stage_trainset_raw["label"] = ""
 
     # reorder columns
@@ -567,13 +571,14 @@ def write_to_trainset_csv(
     turb_stage_trainset_raw = convert_df_julian_to_datetime(turb_stage_trainset_raw)
 
     # add in new values
+    # turb does not need a label field, as it already exists
     turb_fdom_trainset_raw["series"] = "fDOM"
-    turb_fdom_trainset_raw["label"] = ""
 
     turb_trainset_raw["series"] = "turb"
     turb_trainset_raw["label"] = ""
 
     turb_stage_trainset_raw["series"] = "stage"
+    # TODO: add stage rise labels in here
     turb_stage_trainset_raw["label"] = ""
 
     # reorder columns
