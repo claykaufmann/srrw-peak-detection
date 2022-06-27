@@ -15,7 +15,7 @@ def next_time_entry(current_entry: float) -> float:
     """
     This function returns the next time entry in julian time
 
-    current_entry: a julina time float
+    current_entry: a julian time float
 
     return: julian time + 15 minutes from past julian time
     """
@@ -131,6 +131,7 @@ def build_temp_dataframes(
 
     # add peak label for trainset plotting
     new_fdom["label"] = peak_label
+    new_turb_raw["label"] = peak_label
 
     return new_fdom, new_stage, new_turb_raw
 
@@ -508,8 +509,6 @@ def write_to_trainset_csv(
     augmented_stage_raw_turb,
     trainset_turb_path,
 ):
-    # TODO: add peak labels in
-
     # start by creating a dataframe that has the correct columns
     trainset_fdom_df = pd.DataFrame(columns=["series", "timestamp", "value", "label"])
     trainset_turb_df = pd.DataFrame(columns=["series", "timestamp", "value", "label"])
@@ -533,8 +532,6 @@ def write_to_trainset_csv(
     fdom_turb_trainset_raw["label"] = ""
 
     fdom_stage_trainset_raw["series"] = "stage"
-    # TODO add stage rise labels in here...
-    fdom_stage_trainset_raw["label"] = ""
 
     # reorder columns
     fdom_trainset_raw = fdom_trainset_raw.reindex(
@@ -573,13 +570,11 @@ def write_to_trainset_csv(
     # add in new values
     # turb does not need a label field, as it already exists
     turb_fdom_trainset_raw["series"] = "fDOM"
+    turb_fdom_trainset_raw["label"] = ""
 
     turb_trainset_raw["series"] = "turb"
-    turb_trainset_raw["label"] = ""
 
     turb_stage_trainset_raw["series"] = "stage"
-    # TODO: add stage rise labels in here
-    turb_stage_trainset_raw["label"] = ""
 
     # reorder columns
     turb_fdom_trainset_raw = turb_fdom_trainset_raw.reindex(
