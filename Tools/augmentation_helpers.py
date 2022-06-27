@@ -94,7 +94,16 @@ def get_ends_of_peak(cands_df: pd.DataFrame, peak_index) -> tuple():
 
 # might actually work if correct indices are just passed in...
 def build_temp_dataframes(
-    fdom, stage, turb, prev, next, fdom_idx, stage_idx, turb_idx, peak_label
+    fdom,
+    stage,
+    turb,
+    prev,
+    next,
+    fdom_idx,
+    stage_idx,
+    turb_idx,
+    peak_label,
+    extra_points=20,
 ) -> tuple():
     """
     build the temporary dataframes for the peak segment
@@ -115,23 +124,53 @@ def build_temp_dataframes(
 
     turb_idx: the relevant turb index
 
+    extra_points: how many points before and after to add to the peak segment
+
     returns: the new time segments for each dataframe
     """
-    fDOM_raw_time_range = pd.DataFrame(fdom.iloc[fdom_idx - prev : fdom_idx + next + 1])
 
-    # get stage data range
-    stage_time_range = pd.DataFrame(stage.iloc[stage_idx - prev : stage_idx + next + 1])
+    # we dont want to add extra points if fsk/fpt, as it will mess up their appearance
+    if peak_label == "FPT" or peak_label == "FSK":
+        fDOM_raw_time_range = pd.DataFrame(
+            fdom.iloc[fdom_idx - prev : fdom_idx + next + 1]
+        )
 
-    # get turbidity data range
-    turb_time_range = pd.DataFrame(turb.iloc[turb_idx - prev : turb_idx + next + 1])
+        # get stage data range
+        stage_time_range = pd.DataFrame(
+            stage.iloc[stage_idx - prev : stage_idx + next + 1]
+        )
+
+        # get turbidity data range
+        turb_time_range = pd.DataFrame(turb.iloc[turb_idx - prev : turb_idx + next + 1])
+
+    else:
+        fDOM_raw_time_range = pd.DataFrame(
+            fdom.iloc[fdom_idx - (prev + extra_points) : fdom_idx + next + extra_points]
+        )
+
+        # get stage data range
+        stage_time_range = pd.DataFrame(
+            stage.iloc[
+                stage_idx - (prev + extra_points) : stage_idx + next + extra_points
+            ]
+        )
+
+        # get turbidity data range
+        turb_time_range = pd.DataFrame(
+            turb.iloc[turb_idx - (prev + extra_points) : turb_idx + next + extra_points]
+        )
 
     new_fdom = copy.deepcopy(fDOM_raw_time_range)
     new_stage = copy.deepcopy(stage_time_range)
     new_turb_raw = copy.deepcopy(turb_time_range)
 
-    # add peak label for trainset plotting
-    new_fdom["label"] = peak_label
-    new_turb_raw["label"] = peak_label
+    # set default blank label
+    new_fdom["label"] = ""
+    new_turb_raw["label"] = ""
+
+    # add peak label for trainset plotting for specific peak range, not the extra points
+    new_fdom.loc[fdom_idx - prev : fdom_idx + next, "label"] = peak_label
+    new_turb_raw.loc[turb_idx - prev : turb_idx + next, "label"] = peak_label
 
     return new_fdom, new_stage, new_turb_raw
 
