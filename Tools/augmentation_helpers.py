@@ -341,6 +341,7 @@ def update_dataframes(
             )
 
             # HACK: this is super janky but fixes the misalignment of FSK truths
+            # TODO: ensure this still is generated ok data
             if label_of_peak == "FSK":
                 new_peak_index -= 9
 
