@@ -226,7 +226,29 @@ def heighten_augment(
     return df
 
 
-def augment_data(df, peak_index, lower_bound_multiplier, upper_bound_multiplier):
+def plateau_augment(df, peak_index, lower_bound_multiplier, upper_bound_multiplier):
+    """
+    augment a flat plateau
+
+    shifts the main flat section higher or lower, but still above the sides of the plateau to hold definition
+    """
+    # TODO: Implement
+    pass
+
+
+def sink_augment(df, peak_index, lower_bound_multiplier, upper_bound_multiplier):
+    """
+    augment a flat sink
+
+    shifts the main flat section higher or lower, but still below the sides of the sink to hold definition
+    """
+    # TODO: Implement
+    pass
+
+
+def augment_data(
+    df, peak_index, lower_bound_multiplier, upper_bound_multiplier, label_of_peak
+):
     """
     augment the given dataframe
     decides whether to heighten or widen the peak
@@ -243,14 +265,28 @@ def augment_data(df, peak_index, lower_bound_multiplier, upper_bound_multiplier)
     random.seed()
     widen_or_heighten = random.randint(0, 1)
 
-    # if 0, widen peak, else heighten
-    if widen_or_heighten == 0:
-        df = widen_augment(df, peak_index)
-
-    else:
+    # if fpt/fsk, we have a different method of augmenting, call different functions
+    # TODO: call actual functions when completed
+    if label_of_peak == "FPT":
         df = heighten_augment(
             df, peak_index, lower_bound_multiplier, upper_bound_multiplier
         )
+
+    elif label_of_peak == "FSK":
+        df = heighten_augment(
+            df, peak_index, lower_bound_multiplier, upper_bound_multiplier
+        )
+
+    # else, call normal augmenting functions
+    else:
+        # if 0, widen peak, else heighten
+        if widen_or_heighten == 0:
+            df = widen_augment(df, peak_index)
+
+        else:
+            df = heighten_augment(
+                df, peak_index, lower_bound_multiplier, upper_bound_multiplier
+            )
 
     # return augmented dataframe
     return df
