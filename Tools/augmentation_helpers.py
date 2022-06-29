@@ -103,7 +103,7 @@ def build_temp_dataframes(
     stage_idx,
     turb_idx,
     peak_label,
-    extra_points=20,
+    extra_points,
 ) -> tuple():
     """
     build the temporary dataframes for the peak segment
@@ -130,35 +130,29 @@ def build_temp_dataframes(
     """
 
     # we dont want to add extra points if fsk/fpt, as it will mess up their appearance
-    if peak_label == "FPT" or peak_label == "FSK":
-        fDOM_raw_time_range = pd.DataFrame(
-            fdom.iloc[fdom_idx - prev : fdom_idx + next + 1]
-        )
+    # if peak_label == "FPT" or peak_label == "FSK":
+    # fDOM_raw_time_range = pd.DataFrame(fdom.iloc[fdom_idx - prev : fdom_idx + next + 1])
 
-        # get stage data range
-        stage_time_range = pd.DataFrame(
-            stage.iloc[stage_idx - prev : stage_idx + next + 1]
-        )
+    # # get stage data range
+    # stage_time_range = pd.DataFrame(stage.iloc[stage_idx - prev : stage_idx + next + 1])
 
-        # get turbidity data range
-        turb_time_range = pd.DataFrame(turb.iloc[turb_idx - prev : turb_idx + next + 1])
+    # # get turbidity data range
+    # turb_time_range = pd.DataFrame(turb.iloc[turb_idx - prev : turb_idx + next + 1])
 
-    else:
-        fDOM_raw_time_range = pd.DataFrame(
-            fdom.iloc[fdom_idx - (prev + extra_points) : fdom_idx + next + extra_points]
-        )
+    # else:
+    fDOM_raw_time_range = pd.DataFrame(
+        fdom.iloc[fdom_idx - (prev + extra_points) : fdom_idx + next + extra_points]
+    )
 
-        # get stage data range
-        stage_time_range = pd.DataFrame(
-            stage.iloc[
-                stage_idx - (prev + extra_points) : stage_idx + next + extra_points
-            ]
-        )
+    # get stage data range
+    stage_time_range = pd.DataFrame(
+        stage.iloc[stage_idx - (prev + extra_points) : stage_idx + next + extra_points]
+    )
 
-        # get turbidity data range
-        turb_time_range = pd.DataFrame(
-            turb.iloc[turb_idx - (prev + extra_points) : turb_idx + next + extra_points]
-        )
+    # get turbidity data range
+    turb_time_range = pd.DataFrame(
+        turb.iloc[turb_idx - (prev + extra_points) : turb_idx + next + extra_points]
+    )
 
     new_fdom = copy.deepcopy(fDOM_raw_time_range)
     new_stage = copy.deepcopy(stage_time_range)
@@ -306,6 +300,7 @@ def update_dataframes(
     stage_df,
     non_augment_df,
     label_of_peak,
+    extra_points,
 ):
     """
     set updated timestamps, peak values, etc.
@@ -341,7 +336,14 @@ def update_dataframes(
         if df.loc[i, "tmp"] == peak_index:
             # get the new index of the peak
             # this is for the new label for the labeled augmented data
-            new_peak_index = get_last_augment_index(main_augment_df) + prev_dist
+            new_peak_index = (
+                get_last_augment_index(main_augment_df) + prev_dist + extra_points
+            )
+
+            # HACK: this is super janky but fixes the misalignment of FSK truths
+            if label_of_peak == "FSK":
+                new_peak_index -= 9
+
             new_peak_timestamp = new_time_entry
             new_peak_val = df.loc[i, "value"]
 
