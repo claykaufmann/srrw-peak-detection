@@ -295,7 +295,7 @@ def get_cands_fDOM_FSK(
     """
 
     if not is_augmented:
-        cands = [[68114, 68105, 68798, 0.48704]]
+        cands = [[68114, 68114, 68789, 0.48704]]
 
         cands_df = pd.DataFrame(cands)
         cands_df.columns = ["idx_of_peak", "left_base", "right_base", "amplitude"]
