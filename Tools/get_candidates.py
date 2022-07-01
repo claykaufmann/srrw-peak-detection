@@ -612,13 +612,12 @@ def get_cands_turb_FPT(
 ):
     """
     get cands from turbidity flat plateaus
-    """
-    # TODO: modify this to use the augmented file lookup for FPT peaks
-    # TODO: look over this function as a whole, may not work well
 
+    NOTE: raw values hardcoded...
+    """
     # load data
     if not is_augmented:
-        cands = [[33389, 33389, 33671, 303.37]]
+        cands = [[33389, 33389, 33667, 303.37]]
 
         cands_df = pd.DataFrame(cands)
         cands_df.columns = ["idx_of_peak", "left_base", "right_base", "amplitude"]

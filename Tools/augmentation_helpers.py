@@ -131,17 +131,13 @@ def build_temp_dataframes(
 
     # we dont want to add extra points if FPT, as it will mess up their appearance
     if peak_label == "FPT":
-        fDOM_raw_time_range = pd.DataFrame(
-            fdom.iloc[fdom_idx - prev : fdom_idx + next + 1]
-        )
+        fDOM_raw_time_range = pd.DataFrame(fdom.iloc[fdom_idx - prev : fdom_idx + next])
 
         # get stage data range
-        stage_time_range = pd.DataFrame(
-            stage.iloc[stage_idx - prev : stage_idx + next + 1]
-        )
+        stage_time_range = pd.DataFrame(stage.iloc[stage_idx - prev : stage_idx + next])
 
         # get turbidity data range
-        turb_time_range = pd.DataFrame(turb.iloc[turb_idx - prev : turb_idx + next + 1])
+        turb_time_range = pd.DataFrame(turb.iloc[turb_idx - prev : turb_idx + next])
 
     else:
         fDOM_raw_time_range = pd.DataFrame(
@@ -238,8 +234,8 @@ def plateau_augment(df, peak_index, lower_bound_multiplier, upper_bound_multipli
 
     shifts the main flat section higher or lower, but still above the sides of the plateau to hold definition
     """
-    # TODO: Implement
-    pass
+    # we basically need to "select" the entire segment of the FPT plateau, and then shift it up
+    # we can take the entire df, and shift it up or down a bit, because we add no extra points to FPT candidates
 
 
 def sink_augment(df, peak_index, lower_bound_multiplier, upper_bound_multiplier):
@@ -248,8 +244,7 @@ def sink_augment(df, peak_index, lower_bound_multiplier, upper_bound_multiplier)
 
     shifts the main flat section higher or lower, but still below the sides of the sink to hold definition
     """
-    # TODO: Implement
-    pass
+    # "select" the entire sink segment (WE WILL NEED THE ENDS OF THE SINK FOR THIS TO WORK)
 
 
 def augment_data(
