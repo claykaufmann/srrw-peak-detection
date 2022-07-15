@@ -263,7 +263,6 @@ def sink_augment(
         upper_bound_multiplier,
     )
 
-    # FIXME: this also changes the extra points section, that is incorrect (at least I think...)
     df.loc[extra_points:-extra_points, "value"] = (
         df.loc[extra_points:-extra_points, "value"] * value_to_raise_by
     )
