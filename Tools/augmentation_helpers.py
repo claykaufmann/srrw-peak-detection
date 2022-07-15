@@ -182,8 +182,6 @@ def widen_augment(df, peak_idx) -> pd.DataFrame:
     returns: The augmented dataframe
     """
     # decide if positive or negative
-    random.seed()
-    np.random.seed()
     pos_or_neg = random.randint(0, 1)
 
     # if positive, add to peak vals
@@ -215,8 +213,6 @@ def heighten_augment(
 
     returns: the augmented dataframe
     """
-    random.seed()
-    np.random.seed()
     # gen a random number to multiply amplitude by
     random_val = np.random.uniform(
         lower_bound_multiplier,
@@ -232,23 +228,60 @@ def plateau_augment(df, peak_index, lower_bound_multiplier, upper_bound_multipli
     """
     augment a flat plateau
 
-    shifts the main flat section higher or lower, but still above the sides of the plateau to hold definition
+    shifts the main flat section higher, but still above the sides of the plateau to hold definition
+
+    we only shift it higher to keep things simpler
     """
     # we basically need to "select" the entire segment of the FPT plateau, and then shift it up
     # we can take the entire df, and shift it up or down a bit, because we add no extra points to FPT candidates
+    # technically, the df is the entire upper section, as we do not add the extra points to fpt temp dataframes
+
+    # step one: determine the value to raise by
+    value_to_raise_by = np.random.uniform(
+        lower_bound_multiplier,
+        upper_bound_multiplier,
+    )
+
+    # now, apply that value
+    df.loc[:, "value"] = df.loc[:, "value"] * value_to_raise_by
+
+    return df
 
 
-def sink_augment(df, peak_index, lower_bound_multiplier, upper_bound_multiplier):
+def sink_augment(
+    df, peak_index, lower_bound_multiplier, upper_bound_multiplier, extra_points
+):
     """
     augment a flat sink
 
     shifts the main flat section higher or lower, but still below the sides of the sink to hold definition
     """
-    # "select" the entire sink segment (WE WILL NEED THE ENDS OF THE SINK FOR THIS TO WORK)
+    # "select" the entire sink segment
+    # to do this, the selection is just the dataframe, but without the extra points on either side
+    value_to_raise_by = np.random.uniform(
+        lower_bound_multiplier,
+        upper_bound_multiplier,
+    )
+
+    # FIXME: this also changes the extra points section, that is incorrect (at least I think...)
+    df.loc[extra_points:-extra_points, "value"] = (
+        df.loc[extra_points:-extra_points, "value"] * value_to_raise_by
+    )
+
+    return df
 
 
 def augment_data(
-    df, peak_index, lower_bound_multiplier, upper_bound_multiplier, label_of_peak
+    df,
+    peak_index,
+    lower_bound_multiplier,
+    upper_bound_multiplier,
+    fpt_lower_bound_mult,
+    fpt_upper_bound_mult,
+    fsk_lower_bound_mult,
+    fsk_upper_bound_mult,
+    label_of_peak,
+    extra_points,
 ):
     """
     augment the given dataframe
@@ -260,22 +293,20 @@ def augment_data(
 
     lower_bound_multiplier, upper_bound_multiplier: The bounds for which peak can be multiplied
 
+    extra_points: the extra points we add to the edges of the dataframe
+
     returns: the augmented dataframe
     """
     # gen random number
-    random.seed()
     widen_or_heighten = random.randint(0, 1)
 
     # if fpt/fsk, we have a different method of augmenting, call different functions
-    # TODO: call actual functions when completed
     if label_of_peak == "FPT":
-        df = heighten_augment(
-            df, peak_index, lower_bound_multiplier, upper_bound_multiplier
-        )
+        df = plateau_augment(df, peak_index, fpt_lower_bound_mult, fpt_upper_bound_mult)
 
     elif label_of_peak == "FSK":
-        df = heighten_augment(
-            df, peak_index, lower_bound_multiplier, upper_bound_multiplier
+        df = sink_augment(
+            df, peak_index, fsk_lower_bound_mult, fsk_upper_bound_mult, extra_points
         )
 
     # else, call normal augmenting functions
@@ -457,12 +488,12 @@ def smooth_data(
 
     x = np.array(x_points)
 
-    # remove neg numbers, to stop log issues
-    if last_fdom < 0:
+    # remove zero and neg numbers, to stop geom errors
+    if last_fdom <= 0:
         last_fdom = 0.000001
-    if last_stage < 0:
+    if last_stage <= 0:
         last_stage = 0.000001
-    if last_turb < 0:
+    if last_turb <= 0:
         last_turb = 0.000001
 
     fdom_points = np.geomspace(last_fdom, fdom_val, slope_number)
