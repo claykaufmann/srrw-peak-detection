@@ -295,7 +295,7 @@ def get_cands_fDOM_FSK(
     """
 
     if not is_augmented:
-        cands = [[68114, 68105, 68798, 0.48704]]
+        cands = [[68114, 68114, 68789, 0.48704]]
 
         cands_df = pd.DataFrame(cands)
         cands_df.columns = ["idx_of_peak", "left_base", "right_base", "amplitude"]
@@ -608,82 +608,23 @@ def get_cands_turb_SKP(turb_filename, truths_filename, is_augmented=False):
 
 
 def get_cands_turb_FPT(
-    turb_filename, truths_filename, is_augmented=False, fpt_lookup_path=None
+    turb_filename, truths_filename, is_augmented=False, lookup_csv_filename=None
 ):
     """
     get cands from turbidity flat plateaus
-    """
-    # TODO: modify this to use the augmented file lookup for FPT peaks
-    # TODO: look over this function as a whole, may not work well
 
+    NOTE: raw values hardcoded...
+    """
     # load data
     if not is_augmented:
-        turb_data = dm.read_in_preprocessed_timeseries(turb_filename)
+        cands = [[33389, 33389, 33667, 303.37]]
+
+        cands_df = pd.DataFrame(cands)
+        cands_df.columns = ["idx_of_peak", "left_base", "right_base", "amplitude"]
+
     else:
-        turb_data = np.array(dm.read_in_timeseries(turb_filename, True))
-
-    cands = auxiliary_functions.detect_flat_plat(turb_data, 100, 40)
-
-    turb_flat_plat_indxs = []
-    for i in range(cands.shape[0]):
-        if cands[i] == 1:
-            turb_flat_plat_indxs.append(i)
-
-    # create dataframe
-    last_val = -1
-    start_idx = -1
-    end_idx = -1
-
-    start_indices = []
-    end_indices = []
-
-    for idx, val in enumerate(turb_flat_plat_indxs):
-        if val != last_val + 1:
-            # we are now in a new peak, save stuff
-            start_idx = val
-            start_indices.append(start_idx)
-
-            end_idx = last_val
-            end_indices.append(end_idx)
-
-        elif idx + 1 == len(turb_flat_plat_indxs):
-            end_indices.append(val)
-
-        # set last val
-        last_val = val
-
-    # drop first index in end indices
-    del end_indices[0]
-
-    cands = [[]]
-
-    # need to get the actual prominence value
-    for i in range(len(start_indices)):
-        cands.append(
-            [
-                start_indices[i],
-                start_indices[i],
-                end_indices[i],
-                turb_data[start_indices[i]][1],
-            ]
-        )
-
-    # create dataframe
-    cands_df = pd.DataFrame(cands)
-
-    # drop first row (incorrect val)
-    cands_df = cands_df.drop([0])
-
-    # load truths
-    truths = pd.read_csv(truths_filename)
-
-    truths = truths[truths["label_of_peak"] != "NAP"]
-
-    # drop all rows in cands not in truths
-    cands_df = cands_df[cands_df[0].isin(truths["idx_of_peak"])]
-
-    # rename cols
-    cands_df.columns = ["idx_of_peak", "left_base", "right_base", "amplitude"]
+        # handle augmented cands here
+        cands_df = pd.read_csv(lookup_csv_filename)
 
     return cands_df
 

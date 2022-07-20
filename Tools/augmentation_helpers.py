@@ -94,7 +94,16 @@ def get_ends_of_peak(cands_df: pd.DataFrame, peak_index) -> tuple():
 
 # might actually work if correct indices are just passed in...
 def build_temp_dataframes(
-    fdom, stage, turb, prev, next, fdom_idx, stage_idx, turb_idx, peak_label
+    fdom,
+    stage,
+    turb,
+    prev,
+    next,
+    fdom_idx,
+    stage_idx,
+    turb_idx,
+    peak_label,
+    extra_points,
 ) -> tuple():
     """
     build the temporary dataframes for the peak segment
@@ -115,23 +124,49 @@ def build_temp_dataframes(
 
     turb_idx: the relevant turb index
 
+    extra_points: how many points before and after to add to the peak segment
+
     returns: the new time segments for each dataframe
     """
-    fDOM_raw_time_range = pd.DataFrame(fdom.iloc[fdom_idx - prev : fdom_idx + next + 1])
 
-    # get stage data range
-    stage_time_range = pd.DataFrame(stage.iloc[stage_idx - prev : stage_idx + next + 1])
+    # we dont want to add extra points if FPT, as it will mess up their appearance
+    if peak_label == "FPT":
+        fDOM_raw_time_range = pd.DataFrame(fdom.iloc[fdom_idx - prev : fdom_idx + next])
 
-    # get turbidity data range
-    turb_time_range = pd.DataFrame(turb.iloc[turb_idx - prev : turb_idx + next + 1])
+        # get stage data range
+        stage_time_range = pd.DataFrame(stage.iloc[stage_idx - prev : stage_idx + next])
+
+        # get turbidity data range
+        turb_time_range = pd.DataFrame(turb.iloc[turb_idx - prev : turb_idx + next])
+
+    else:
+        fDOM_raw_time_range = pd.DataFrame(
+            fdom.iloc[fdom_idx - (prev + extra_points) : fdom_idx + next + extra_points]
+        )
+
+        # get stage data range
+        stage_time_range = pd.DataFrame(
+            stage.iloc[
+                stage_idx - (prev + extra_points) : stage_idx + next + extra_points
+            ]
+        )
+
+        # get turbidity data range
+        turb_time_range = pd.DataFrame(
+            turb.iloc[turb_idx - (prev + extra_points) : turb_idx + next + extra_points]
+        )
 
     new_fdom = copy.deepcopy(fDOM_raw_time_range)
     new_stage = copy.deepcopy(stage_time_range)
     new_turb_raw = copy.deepcopy(turb_time_range)
 
-    # add peak label for trainset plotting
-    new_fdom["label"] = peak_label
-    new_turb_raw["label"] = peak_label
+    # set default blank label
+    new_fdom["label"] = ""
+    new_turb_raw["label"] = ""
+
+    # add peak label for trainset plotting for specific peak range, not the extra points
+    new_fdom.loc[fdom_idx - prev : fdom_idx + next, "label"] = peak_label
+    new_turb_raw.loc[turb_idx - prev : turb_idx + next, "label"] = peak_label
 
     return new_fdom, new_stage, new_turb_raw
 
@@ -147,8 +182,6 @@ def widen_augment(df, peak_idx) -> pd.DataFrame:
     returns: The augmented dataframe
     """
     # decide if positive or negative
-    random.seed()
-    np.random.seed()
     pos_or_neg = random.randint(0, 1)
 
     # if positive, add to peak vals
@@ -180,8 +213,6 @@ def heighten_augment(
 
     returns: the augmented dataframe
     """
-    random.seed()
-    np.random.seed()
     # gen a random number to multiply amplitude by
     random_val = np.random.uniform(
         lower_bound_multiplier,
@@ -193,7 +224,64 @@ def heighten_augment(
     return df
 
 
-def augment_data(df, peak_index, lower_bound_multiplier, upper_bound_multiplier):
+def plateau_augment(df, peak_index, lower_bound_multiplier, upper_bound_multiplier):
+    """
+    augment a flat plateau
+
+    shifts the main flat section higher, but still above the sides of the plateau to hold definition
+
+    we only shift it higher to keep things simpler
+    """
+    # we basically need to "select" the entire segment of the FPT plateau, and then shift it up
+    # we can take the entire df, and shift it up or down a bit, because we add no extra points to FPT candidates
+    # technically, the df is the entire upper section, as we do not add the extra points to fpt temp dataframes
+
+    # step one: determine the value to raise by
+    value_to_raise_by = np.random.uniform(
+        lower_bound_multiplier,
+        upper_bound_multiplier,
+    )
+
+    # now, apply that value
+    df.loc[:, "value"] = df.loc[:, "value"] * value_to_raise_by
+
+    return df
+
+
+def sink_augment(
+    df, peak_index, lower_bound_multiplier, upper_bound_multiplier, extra_points
+):
+    """
+    augment a flat sink
+
+    shifts the main flat section higher or lower, but still below the sides of the sink to hold definition
+    """
+    # "select" the entire sink segment
+    # to do this, the selection is just the dataframe, but without the extra points on either side
+    value_to_raise_by = np.random.uniform(
+        lower_bound_multiplier,
+        upper_bound_multiplier,
+    )
+
+    df.loc[extra_points:-extra_points, "value"] = (
+        df.loc[extra_points:-extra_points, "value"] * value_to_raise_by
+    )
+
+    return df
+
+
+def augment_data(
+    df,
+    peak_index,
+    lower_bound_multiplier,
+    upper_bound_multiplier,
+    fpt_lower_bound_mult,
+    fpt_upper_bound_mult,
+    fsk_lower_bound_mult,
+    fsk_upper_bound_mult,
+    label_of_peak,
+    extra_points,
+):
     """
     augment the given dataframe
     decides whether to heighten or widen the peak
@@ -204,20 +292,32 @@ def augment_data(df, peak_index, lower_bound_multiplier, upper_bound_multiplier)
 
     lower_bound_multiplier, upper_bound_multiplier: The bounds for which peak can be multiplied
 
+    extra_points: the extra points we add to the edges of the dataframe
+
     returns: the augmented dataframe
     """
     # gen random number
-    random.seed()
     widen_or_heighten = random.randint(0, 1)
 
-    # if 0, widen peak, else heighten
-    if widen_or_heighten == 0:
-        df = widen_augment(df, peak_index)
+    # if fpt/fsk, we have a different method of augmenting, call different functions
+    if label_of_peak == "FPT":
+        df = plateau_augment(df, peak_index, fpt_lower_bound_mult, fpt_upper_bound_mult)
 
-    else:
-        df = heighten_augment(
-            df, peak_index, lower_bound_multiplier, upper_bound_multiplier
+    elif label_of_peak == "FSK":
+        df = sink_augment(
+            df, peak_index, fsk_lower_bound_mult, fsk_upper_bound_mult, extra_points
         )
+
+    # else, call normal augmenting functions
+    else:
+        # if 0, widen peak, else heighten
+        if widen_or_heighten == 0:
+            df = widen_augment(df, peak_index)
+
+        else:
+            df = heighten_augment(
+                df, peak_index, lower_bound_multiplier, upper_bound_multiplier
+            )
 
     # return augmented dataframe
     return df
@@ -267,6 +367,7 @@ def update_dataframes(
     stage_df,
     non_augment_df,
     label_of_peak,
+    extra_points,
 ):
     """
     set updated timestamps, peak values, etc.
@@ -302,7 +403,15 @@ def update_dataframes(
         if df.loc[i, "tmp"] == peak_index:
             # get the new index of the peak
             # this is for the new label for the labeled augmented data
-            new_peak_index = get_last_augment_index(main_augment_df) + prev_dist
+            # if FPT, we do not want to add the extra points as we did not add them to FPT peaks
+            if label_of_peak == "FPT":
+                new_peak_index = get_last_augment_index(main_augment_df) + prev_dist
+
+            else:
+                new_peak_index = (
+                    get_last_augment_index(main_augment_df) + prev_dist + extra_points
+                )
+
             new_peak_timestamp = new_time_entry
             new_peak_val = df.loc[i, "value"]
 
@@ -378,12 +487,12 @@ def smooth_data(
 
     x = np.array(x_points)
 
-    # remove neg numbers, to stop log issues
-    if last_fdom < 0:
+    # remove zero and neg numbers, to stop geom errors
+    if last_fdom <= 0:
         last_fdom = 0.000001
-    if last_stage < 0:
+    if last_stage <= 0:
         last_stage = 0.000001
-    if last_turb < 0:
+    if last_turb <= 0:
         last_turb = 0.000001
 
     fdom_points = np.geomspace(last_fdom, fdom_val, slope_number)

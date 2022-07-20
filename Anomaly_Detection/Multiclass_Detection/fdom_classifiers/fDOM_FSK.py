@@ -70,13 +70,7 @@ class fDOM_FSK_Classifier:
             right_base = int(peak[2])
             peak_width = int(right_base - left_base)
 
-            # prominence condition
-            # prom_cond = peak[3] <= params["prominence"] and peak[3] > 0
-
-            prom_cond = (
-                abs(peak[3] - self.fdom_data[left_base][1]) > params["prominence"]
-                and peak[3] > 0  # remove PLP preds
-            )
+            prom_cond = peak[3] <= params["prominence"] and peak[3] > 0
 
             # check flatness
             min_val = math.inf
@@ -105,16 +99,19 @@ class fDOM_FSK_Classifier:
             sink_cond = True
             # NOTE: IN FSK CANDS, the left and right ends are above the flat sink, which means we do not need to go before the left base in this case
             try:
-                if self.fdom_data[left_base][1] <= self.fdom_data[left_base + 10][1]:
+                if self.fdom_data[left_base - 2][1] <= self.fdom_data[left_base][1]:
                     sink_cond = False
-                if self.fdom_data[right_base][1] <= self.fdom_data[right_base - 10][1]:
+                if self.fdom_data[right_base + 2][1] <= self.fdom_data[right_base][1]:
                     sink_cond = False
             except:
                 # if we get an index error, assume false
                 sink_cond = False
 
+            # print(
+            #     f"Prom cond: {prom_cond}, flat cond: {flat_cond}, sink cond: {sink_cond}"
+            # )
+
             # if prom flat and plat conds, this is a flat plateau
-            # FIXME: flat cond could be messing things up here
             if prom_cond and flat_cond and sink_cond:
                 results.append([peak[0], "FSK"])
             else:

@@ -111,6 +111,8 @@ class fDOM_SKP_Classifier:
         for index, peak in enumerate(peaks):
             prom_cond = peak[3] >= params["min_prominence"]
             basewidth_cond = abs(peak[1] - peak[2]) <= params["max_basewidth"]
+
+            # we have potentially decided to remove the peak proximity condition, as it resulted in low accuracy
             downward_bases_cond = self.check_downward_peak_condition(
                 index, use_best_params
             )
@@ -118,7 +120,9 @@ class fDOM_SKP_Classifier:
                 self.prox_to_adjacent[index] >= params["proximity_threshold"]
             )
 
-            if prom_cond and basewidth_cond and downward_bases_cond and peak_prox_cond:
+            if (
+                prom_cond and basewidth_cond
+            ):  # and downward_bases_cond and peak_prox_cond:
                 results.append([peak[0], "SKP"])
 
             else:
