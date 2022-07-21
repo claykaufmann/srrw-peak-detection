@@ -666,17 +666,24 @@ class turbAugOnlyDataset(data.Dataset):
                 # time[peak_idx - left : peak_idx + right + 1].tolist(),
             ]
 
-            if len(sample) >= 3 and len(sample[0]) > 0:
-                X.append(sample)
+            if len(sample[0]) > 0:
 
                 # get label
-                label = truths.loc[
-                    truths["idx_of_peak"] == peak_idx, "label_of_peak"
-                ].iloc[0]
+                # error loading some of them, try/except/else to avoid
+                try:
+                    label = truths.loc[
+                        truths["idx_of_peak"] == peak_idx, "label_of_peak"
+                    ].iloc[0]
 
-                # convert label to normalized integer value, using passed in label encoder
-                label = self.label_encoder.transform([label])
-                Y.append(label)
+                except:
+                    pass
+
+                else:
+                    X.append(sample)
+
+                    # convert label to normalized integer value, using passed in label encoder
+                    label = self.label_encoder.transform([label])
+                    Y.append(label)
 
             else:
                 print("WARNING: shape of a sample is incorrect, not adding it")
